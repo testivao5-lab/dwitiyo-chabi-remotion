@@ -538,8 +538,12 @@ export const DiningTable: React.FC<{ pal: Pal; x?: number; plates?: boolean }> =
         <rect x={x + 764} y={612} width={30} height={38} rx={5} fill="#8fb3c4" opacity={0.55} />
         <rect x={x + 766} y={588} width={4} height={56} rx={2} fill="#fff" opacity={0.6} />
         <ellipse cx={x + 875} cy={656} rx={34} ry={6} fill="#000" opacity={0.28} />
-        <path d={`M ${x + 850} 654 L ${x + 850} 560 Q ${x + 900} 560 ${x + 900} 600 L ${x + 890} 654 Z`} fill="#8a9bb0" stroke={OUT} strokeWidth={3} />
-        <path d={`M ${x + 856} 650 L ${x + 856} 570`} stroke="#fff" strokeWidth={4} opacity={0.35} />
+        {/* water jug: belly, spout and handle */}
+        <path d={`M ${x + 898} 584 Q ${x + 934} 588 ${x + 926} 618 Q ${x + 921} 636 ${x + 900} 638`} fill="none" stroke={OUT} strokeWidth={9} strokeLinecap="round" />
+        <path d={`M ${x + 898} 584 Q ${x + 934} 588 ${x + 926} 618 Q ${x + 921} 636 ${x + 900} 638`} fill="none" stroke="#8a9bb0" strokeWidth={4.5} strokeLinecap="round" />
+        <path d={`M ${x + 850} 654 Q ${x + 838} 622 ${x + 855} 598 L ${x + 852} 572 Q ${x + 846} 564 ${x + 836} 562 L ${x + 862} 566 L ${x + 896} 566 L ${x + 896} 598 Q ${x + 912} 624 ${x + 902} 654 Z`} fill="#8a9bb0" stroke={OUT} strokeWidth={3} strokeLinejoin="round" />
+        <path d={`M ${x + 858} 648 Q ${x + 850} 624 ${x + 864} 602`} stroke="#fff" strokeWidth={4} fill="none" opacity={0.4} strokeLinecap="round" />
+        <ellipse cx={x + 876} cy={566} rx={20} ry={4} fill="#5d6b7c" stroke={OUT} strokeWidth={2} />
       </g>
     )}
   </g>

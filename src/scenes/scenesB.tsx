@@ -272,7 +272,14 @@ export const s18 = (c: Ctx): SceneOut => {
         <g clipPath="url(#inset18)">
           <rect x={520} y={90} width={420} height={380} fill="#8f9aa0" />
           <rect x={520} y={330} width={420} height={140} fill="#6a6b64" />
-          <rect x={780} y={110} width={130} height={160} fill="#cfd8dc" stroke="#2b1d17" strokeWidth={4} />
+          <g>
+            <rect x={774} y={104} width={142} height={172} fill="#6f5a45" stroke="#2b1d17" strokeWidth={4} />
+            <rect x={784} y={114} width={122} height={152} fill="#9fb8c8" />
+            <rect x={784} y={114} width={122} height={70} fill="#c4d6e0" opacity={0.7} />
+            <path d="M 845 114 V 266 M 784 190 H 906" stroke="#6f5a45" strokeWidth={6} />
+            <path d="M 800 128 L 830 128 L 800 160 Z" fill="#fff" opacity={0.25} />
+            <rect x={768} y={268} width={154} height={12} fill="#85684d" stroke="#2b1d17" strokeWidth={3} />
+          </g>
           <Person t={t} a={{ id: 'M', x: 700, y: 585, scale: 0.62, expr: t > tM ? 'neutral' : 'soft', hf: [730, 232], look: -0.2, mouth: undefined }} />
           <Phone x={738} y={238} rot={10} s={0.55} />
         </g>
@@ -333,9 +340,9 @@ export const s20 = (c: Ctx): SceneOut => {
       <>
         <Ledger x={1010} y={662} s={1.35} write={clamp((t - c.T(133)) / 6)} lines={6} />
         <Lamp x={1450} y={662} s={1.1} />
-        {box(850, 410, u * 3 - 0)}
-        {box(850 + 250, 410, u * 3 - 1)}
-        {box(850 + 125, 330, u * 3 - 2)}
+        {box(655, 335, u * 3 - 0)}
+        {box(905, 335, u * 3 - 1)}
+        {box(780, 425, u * 3 - 2)}
       </>
     ),
   };

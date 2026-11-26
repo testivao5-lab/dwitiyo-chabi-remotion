@@ -23,7 +23,7 @@ export const s21 = (c: Ctx): SceneOut => {
       { d: 99, a: [1180, 500, 1.5], b: [1200, 500, 1.65] },
     ]),
     actors: [
-      { id: 'B', x: w.x, walk: w.walk, flip: false, expr: t < tB1 ? 'worried' : 'sad', look: 0.8, hf: [w.x + 78, 500], hr: [w.x + 20, 520] },
+      { id: 'B', x: w.x, walk: w.walk, flip: false, expr: t < tB1 ? 'worried' : 'sad', look: 0.8, hf: [w.x + 74, 512], hr: [w.x + 44, 524] },
       { id: 'M', x: 1620, flip: true, expr: 'sad', look: t < tSil ? 0.6 : 0.4, lookY: 0.2, hf: [1585, 500], hr: [1548, 508], z: 'front' },
     ],
     props: <Book x={w.x + 62 + 22} y={508} s={0.5} rot={-90 + 90} />,
@@ -66,13 +66,13 @@ export const s23 = (c: Ctx): SceneOut => {
     bg: 'shop',
     pal: PAL.neutral,
     cam: camSeq(t, [
-      { d: tClose, a: [1420, 480, 1.45], b: [1440, 490, 1.7] },
-      { d: 99, a: [1445, 560, 2.0], b: [1445, 560, 2.3] },
+      { d: tClose, a: [1440, 470, 1.4], b: [1450, 470, 1.6] },
+      { d: 99, a: [1450, 500, 1.75], b: [1450, 500, 1.95] },
     ]),
     actors: [
-      { id: 'C', x: 1230, expr: 'thinking', look: 0.8, lookY: 0.6, hf: [1360, 598], hr: null, lean: 8, z: 'back' },
+      { id: 'C', x: 1170, expr: 'thinking', look: 0.8, lookY: 0.6, hf: [1295, 600], hr: null, lean: 8, z: 'back' },
       { id: 'B', x: 1450, flip: true, expr: 'soft', look: -0.1, lookY: 0.9, lean: 10, hf: bPen, hr: [1520, COUNTER_Y - 2], z: 'back', pen: true },
-      { id: 'M', x: 1670, flip: true, expr: 'soft', look: -0.7, lookY: 0.7, lean: 7, hf: [1530, 604], hr: null, z: 'back' },
+      { id: 'M', x: 1735, flip: true, expr: 'soft', look: -0.7, lookY: 0.7, lean: 7, hf: [1625, 612], hr: null, z: 'back' },
     ],
     props: (
       <>

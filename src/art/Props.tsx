@@ -21,16 +21,13 @@ export const KeyRing: React.FC<{ x: number; y: number; s?: number; keys?: number
   x, y, s = 1, keys = 2, rot = 0, extra = false,
 }) => (
   <g transform={`translate(${x} ${y}) rotate(${rot}) scale(${s})`}>
-    <circle r={30} fill="none" stroke="#a9a9ad" strokeWidth={7} />
-    <circle r={30} fill="none" stroke={OUT} strokeWidth={2} opacity={0.7} />
+    {/* ring + keys lying flat on the counter (blades fan out sideways, nothing hangs over the counter edge) */}
     {Array.from({ length: keys }).map((_, i) => (
-      <Key key={i} x={0} y={0} rot={70 + i * 34} s={0.7} shine={0.3} />
+      <Key key={i} x={0} y={0} rot={172 + i * 13} s={0.7} shine={0.3} />
     ))}
-    {extra && (
-      <g transform="rotate(20)">
-        <Key x={0} y={0} rot={140} s={0.78} shine={0.9} />
-      </g>
-    )}
+    {extra && <Key x={0} y={-2} rot={190} s={0.78} shine={0.9} />}
+    <ellipse rx={30} ry={17} fill="none" stroke={OUT} strokeWidth={10} />
+    <ellipse rx={30} ry={17} fill="none" stroke="#b9b9bd" strokeWidth={5.5} />
   </g>
 );
 
@@ -87,12 +84,15 @@ export const OrderPaper: React.FC<{ x: number; y: number; rot?: number; s?: numb
 
 export const Sandals: React.FC<{ x: number; y: number; s?: number }> = ({ x, y, s = 1 }) => (
   <g transform={`translate(${x} ${y}) scale(${s})`}>
-    <ellipse cx={30} cy={16} rx={110} ry={11} fill="#000" opacity={0.22} />
+    <ellipse cx={34} cy={14} rx={120} ry={11} fill="#000" opacity={0.22} />
     {[0, 1].map((i) => (
-      <g key={i} transform={`translate(${i * 78} ${i * 6}) rotate(${i ? -6 : 4})`}>
-        <path d="M -20 0 Q -30 -26 0 -34 Q 30 -36 34 -8 Q 30 14 -4 14 Q -18 12 -20 0 Z" fill="#4a3a2c" stroke={OUT} strokeWidth={3.5} />
-        <path d="M -4 -30 L 6 -2 L 18 -26" fill="none" stroke="#c98a3a" strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M -4 -30 L 6 -2 L 18 -26" fill="none" stroke={OUT} strokeWidth={1.5} />
+      <g key={i} transform={`translate(${i * 92} ${i * 4}) rotate(${i ? -5 : 3})`}>
+        {/* flip-flop seen from a low angle: flat sole + thong */}
+        <path d="M -44 4 Q -46 -8 -18 -10 L 30 -9 Q 50 -6 50 4 Q 50 14 30 14 L -18 14 Q -46 14 -44 4 Z" fill="#6b5339" stroke={OUT} strokeWidth={3.5} strokeLinejoin="round" />
+        <path d="M -40 5 Q -40 -4 -16 -6 L 28 -5 Q 44 -3 44 4" fill="none" stroke="#8a6e4b" strokeWidth={3} opacity={0.8} />
+        <path d="M 26 3 L -2 -14 M 26 3 L -2 19" fill="none" stroke={OUT} strokeWidth={9} strokeLinecap="round" />
+        <path d="M 26 3 L -2 -14 M 26 3 L -2 19" fill="none" stroke="#c98a3a" strokeWidth={5.4} strokeLinecap="round" />
+        <circle cx={26} cy={3} r={4} fill="#e0b050" stroke={OUT} strokeWidth={1.5} />
       </g>
     ))}
   </g>

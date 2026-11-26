@@ -119,10 +119,19 @@ const ANKLE = 22;
 const shade = (c: string, k: number) => mixHex(c, '#000000', k);
 const lite = (c: string, k: number) => mixHex(c, '#ffffff', k);
 
+/** soft IK: when the hand is close to the shoulder the arm is foreshortened (as seen in perspective) so the
+ *  upper arm never sticks out horizontally like a wing */
+function armIK(sx: number, sy: number, tx: number, ty: number, bend: 1 | -1) {
+  const d = Math.hypot(tx - sx, ty - sy);
+  const k = clamp(d / 190, 0.55, 1);
+  const r = ik(sx, sy, tx, ty, UP * k, LO * k, bend);
+  return { ...r, k };
+}
+
 /** elbow always points down / outward (never folds across the chest) */
 function elbowBend(sx: number, sy: number, tx: number, ty: number, side: 1 | -1): 1 | -1 {
   const score = (bend: 1 | -1) => {
-    const { ex, ey } = ik(sx, sy, tx, ty, UP, LO, bend);
+    const { ex, ey } = armIK(sx, sy, tx, ty, bend);
     // elbow must not cross over the centre-line of the body (arm folded across the chest)
     const inside = Math.max(0, 34 - ex * side) * 3.2;
     // prefer elbows that sit low and slightly outward
@@ -208,7 +217,7 @@ const Arm: React.FC<{
   front: boolean; flat: boolean; curl: number; pen?: boolean;
 }> = ({ sx, sy, tx, ty, side, w, d, front, flat, curl, pen }) => {
   const bend = elbowBend(sx, sy, tx, ty, side);
-  const { ex, ey, hx, hy } = ik(sx, sy, tx, ty, UP, LO, bend);
+  const { ex, ey, hx, hy } = armIK(sx, sy, tx, ty, bend);
   let ang = (Math.atan2(hy - ey, hx - ex) * 180) / Math.PI;
   if (flat) {
     // hand lies on the surface: keep the hand close to horizontal, fingers pointing in front of the body

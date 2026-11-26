@@ -34,6 +34,8 @@ export interface SceneOut {
   pal: Pal;
   cam: Cam;
   actors: ActorSpec[];
+  /** drawn right after the background, behind every actor */
+  bgFront?: React.ReactNode;
   props?: React.ReactNode;
   front?: React.ReactNode;
   overlay?: React.ReactNode;

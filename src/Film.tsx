@@ -110,6 +110,7 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
             {out.bg === 'room' && <MahinRoom pal={pal} t={tg} />}
             {out.bg === 'street' && <Street pal={pal} t={tg} {...bgProps} />}
           </g>
+          {out.bgFront}
           {back.map((a, k) => (
             <Actor key={`b${k}${a.id}`} a={a} t={tg} g={g} part={armsOver(a) ? 'body' : 'all'} />
           ))}
