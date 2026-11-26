@@ -67,7 +67,7 @@ export const s23 = (c: Ctx): SceneOut => {
     pal: PAL.neutral,
     cam: camSeq(t, [
       { d: tClose, a: [1420, 480, 1.45], b: [1440, 490, 1.7] },
-      { d: 99, a: [1445, 590, 2.6], b: [1445, 575, 3.1] },
+      { d: 99, a: [1445, 560, 2.0], b: [1445, 560, 2.3] },
     ]),
     actors: [
       { id: 'C', x: 1230, expr: 'thinking', look: 0.8, lookY: 0.6, hf: [1360, 598], hr: null, lean: 8, z: 'back' },
@@ -242,8 +242,8 @@ export const s29 = (c: Ctx): SceneOut => {
     pal: PAL.ending,
     bgProps: { shutter: 1 - 0.55 * open, doorGlow: open, garland: false },
     cam: camSeq(t, [
-      { d: tClosed - 0.2, a: [1120, 640, 2.2], b: [1170, 690, 2.9] },
-      { d: tOpen - tClosed + 0.2, a: [1180, 700, 3.4], b: [1190, 705, 3.8] },
+      { d: tClosed - 0.2, a: [1060, 560, 1.5], b: [1150, 600, 1.9] },
+      { d: tOpen - tClosed + 0.2, a: [1170, 640, 2.3], b: [1180, 650, 2.5] },
       { d: 99, a: [1080, 560, 1.9], b: [960, 520, 1.0] },
     ]),
     actors: [
