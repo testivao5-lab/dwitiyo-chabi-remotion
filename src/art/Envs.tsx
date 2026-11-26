@@ -5,7 +5,7 @@ import { rng, mixHex, sway } from '../lib/anim';
 const OUT = '#2b1d17';
 
 /* ---------- small helpers ---------- */
-function ShelfItems({ x0, x1, yb, pal, seed, maxH = 118 }: { x0: number; x1: number; yb: number; pal: Pal; seed: number; maxH?: number }) {
+function ShelfItems({ x0, x1, yb, pal, seed, maxH = 100 }: { x0: number; x1: number; yb: number; pal: Pal; seed: number; maxH?: number }) {
   const r = rng(seed);
   const out: React.ReactNode[] = [];
   let x = x0;
@@ -93,7 +93,8 @@ export const Shop: React.FC<{ pal: Pal; t: number; stockBox?: boolean; bulb?: bo
         {/* street silhouettes */}
         <rect x={110} y={420} width={90} height={400} fill={mixHex(pal.sky2, '#000', 0.2)} opacity={0.75} />
         <rect x={210} y={500} width={70} height={320} fill={mixHex(pal.sky2, '#000', 0.3)} opacity={0.7} />
-        <path d="M 290 470 L 390 470 L 390 560 L 290 560 Z" fill="#b5534a" opacity={0.55} />
+        <rect x={286} y={430} width={102} height={312} fill={mixHex(pal.sky2, '#3a3a3a', 0.25)} opacity={0.7} />
+        <rect x={286} y={462} width={102} height={46} fill="#b5534a" opacity={0.5} />
         <rect x={102} y={742} width={286} height={76} fill={mixHex(pal.sky, '#7a6a55', 0.5)} />
         {/* door leaf (ajar) */}
         <path d="M 102 240 L 150 252 L 150 800 L 102 818 Z" fill={pal.wood} stroke={OUT} strokeWidth={4} />
@@ -158,7 +159,7 @@ export const Shop: React.FC<{ pal: Pal; t: number; stockBox?: boolean; bulb?: bo
       </defs>
       <polygon points="390,250 1100,520 1180,1080 330,1080 390,818" fill="url(#shaft)" />
       {dust.map((d, i) => (
-        <circle key={i} cx={d.x + sway(t, 14, 7 + (i % 5), d.p)} cy={d.y + sway(t, 22, 9 + (i % 4), d.p) - t * 2 % 40} r={d.s} fill="#fff7de" opacity={0.28 + 0.2 * Math.sin(t * 0.9 + d.p)} />
+        <circle key={i} cx={d.x + sway(t, 14, 7 + (i % 5), d.p)} cy={d.y + sway(t, 22, 9 + (i % 4), d.p) + sway(t, 14, 17, d.p * 2)} r={d.s} fill="#fff7de" opacity={0.28 + 0.2 * Math.sin(t * 0.9 + d.p)} />
       ))}
     </g>
   );

@@ -142,6 +142,20 @@ export interface ActorSpec {
 }
 
 const OUT = '#2b1d17';
+
+/**
+ * Pick the elbow side so the elbow always points outward / downward (natural pose).
+ * `side` = +1 for the shoulder on the +x side, -1 for the -x side.
+ * (A fixed bend sign made the front arm fold across the chest when hanging down.)
+ */
+function elbowBend(sx: number, sy: number, tx: number, ty: number, side: 1 | -1): 1 | -1 {
+  // evaluate both IK solutions and keep the elbow that sits lower and further away from the body
+  const score = (bend: 1 | -1) => {
+    const { ex, ey } = ik(sx, sy, tx, ty, UP, LO, bend);
+    return (ey - sy) * 1 + (ex - sx) * side * 0.6;
+  };
+  return score(1) >= score(-1) ? 1 : -1;
+}
 const UP = 130;
 const LO = 120;
 const HIP_Y = -272;
@@ -487,8 +501,8 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
           </g>
         ) : (
           <g>
-            <Limb sx={-24} sy={-274} tx={rf[0]} ty={rf[1] - 4} l1={142} l2={136} bend={-1} w={legW} c1={pantsShade} c2={pantsShade} foot shoe={d.shoes} />
-            <Limb sx={24} sy={-274} tx={lf[0]} ty={lf[1] - 4} l1={142} l2={136} bend={-1} w={legW} c1={d.pants} c2={d.pants} foot shoe={d.shoes} />
+            <Limb sx={-24} sy={-274} tx={rf[0]} ty={rf[1] - 4} l1={140} l2={131} bend={-1} w={legW} c1={pantsShade} c2={pantsShade} foot shoe={d.shoes} />
+            <Limb sx={24} sy={-274} tx={lf[0]} ty={lf[1] - 4} l1={140} l2={131} bend={-1} w={legW} c1={d.pants} c2={d.pants} foot shoe={d.shoes} />
             <rect x={-ww + 2} y={-300} width={(ww - 2) * 2} height={46} rx={14} fill={d.pants} stroke={OUT} strokeWidth={3.5} />
           </g>
         )}
@@ -496,7 +510,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
         {/* upper body (leans around hip) */}
         <g transform={`rotate(${lean} 0 ${HIP_Y})`}>
           {/* rear arm */}
-          <Limb sx={rShoulder[0]} sy={rShoulder[1]} tx={hr[0]} ty={hr[1]} l1={UP} l2={LO} bend={1} w={armW} c1={tShade} c2={d.sleeve === 'long' ? tShade : d.skinShade} hand skin={d.skinShade} />
+          <Limb sx={rShoulder[0]} sy={rShoulder[1]} tx={hr[0]} ty={hr[1]} l1={UP} l2={LO} bend={elbowBend(rShoulder[0], rShoulder[1], hr[0], hr[1], -1)} w={armW} c1={tShade} c2={d.sleeve === 'long' ? tShade : d.skinShade} hand skin={d.skinShade} />
           {/* torso */}
           <path d={torsoPath} fill={d.saree ? d.shirt : d.shirt} stroke={OUT} strokeWidth={3.8} strokeLinejoin="round" />
           <clipPath id={cid}>
@@ -522,7 +536,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
             <Head d={d} ep={ep} mouthOpen={a.mouth ?? 0} look={lookL} lookY={a.lookY ?? 0} blink={blink} />
           </g>
           {/* front arm */}
-          <Limb sx={fShoulder[0]} sy={fShoulder[1]} tx={hf[0]} ty={hf[1]} l1={UP} l2={LO} bend={1} w={armW} c1={d.shirt} c2={sleeveC} hand skin={d.skin} />
+          <Limb sx={fShoulder[0]} sy={fShoulder[1]} tx={hf[0]} ty={hf[1]} l1={UP} l2={LO} bend={elbowBend(fShoulder[0], fShoulder[1], hf[0], hf[1], 1)} w={armW} c1={d.shirt} c2={sleeveC} hand skin={d.skin} />
         </g>
       </g>
       {/* keep sleeveC referenced for tree-shaking clarity */}
