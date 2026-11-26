@@ -8,20 +8,31 @@ import { visemeAt, loudness } from './lib/lipsync';
 import { clamp, rng } from './lib/anim';
 import { SceneOut, makeCtx, COUNTER_Y } from './scenes/kit';
 import { SCENES } from './scenes';
+import { Halation, LightLayer, RimDefs, ShadeLayer, Texture, TextureDefs, rigFor } from './art/Lighting';
 
 const PRE = 10; // dissolve frames before each scene boundary
 
-const Actor: React.FC<{ a: ActorSpec; t: number; g: number; part?: ActorSpec['part'] }> = ({ a, t, g, part }) => {
+const Actor: React.FC<{ a: ActorSpec; t: number; g: number; part?: ActorSpec['part']; light?: number }> = ({ a, t, g, part, light }) => {
   const talking = isTalking(a.id, g);
   const vis = a.mouth !== undefined ? undefined : visemeAt(a.id, g);
   const gest = talking ? loudness(g, 0.35) : 0;
-  const emph = talking ? clamp((loudness(g, 0.06) - loudness(g, 0.8)) * 2.4, 0, 1) : 0;
+  const emphAt = (gg: number) => (talking ? clamp((loudness(gg, 0.06) - loudness(gg, 0.8)) * 2.4, 0, 1) : 0);
+  const emph = emphAt(g);
+  const tiltAt = (gg: number) => (talking ? Math.sin(gg * 4.1 + a.id.length) * 1.1 * loudness(gg, 0.35) + emphAt(gg) * 1.8 : 0);
+  // principles: follow-through (velocity of head / stress) + anticipation (look-ahead of stress)
+  const dTilt = tiltAt(g) - tiltAt(g - 0.1);
+  const dEmph = emph - emphAt(g - 0.08);
+  const anti = clamp((emphAt(g + 0.12) - emph) * 1.6, 0, 1);
   const spec: ActorSpec = {
     ...a,
     vis,
     gest,
     emph,
     part,
+    light,
+    dTilt,
+    dEmph,
+    anti,
     // natural speaking motion: head nods on stressed syllables, body rocks gently
     tilt: (a.tilt ?? 0) + (talking ? Math.sin(g * 4.1 + a.id.length) * 1.1 * gest + emph * 1.8 : 0),
     lean: (a.lean ?? 0) + (talking ? Math.sin(g * 2.3) * 0.7 * gest + emph * 0.9 : 0),
@@ -31,7 +42,7 @@ const Actor: React.FC<{ a: ActorSpec; t: number; g: number; part?: ActorSpec['pa
 
 const Atmosphere: React.FC<{ t: number; warm: boolean; id: number }> = ({ t, warm, id }) => {
   const r = rng(300 + id);
-  const motes = Array.from({ length: 22 }).map((_, i) => ({ x: r() * WIDTH, y: r() * HEIGHT, s: 1 + r() * 2.6, sp: 4 + r() * 8, ph: r() * 10 }));
+  const motes = Array.from({ length: 22 }).map(() => ({ x: r() * WIDTH, y: r() * HEIGHT, s: 1 + r() * 2.6, sp: 4 + r() * 8, ph: r() * 10 }));
   return (
     <g>
       <defs>
@@ -67,7 +78,10 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
   const g = Math.max(gFrame / FPS, s0);
   const c = makeCtx(i, sceneDur(i), g);
   const out: SceneOut = SCENES[i](c);
-  const [cx0, cy0, z] = out.cam;
+  const [cx0, cy0, z0] = out.cam;
+  // staging: very slow push-in over each scene (eased) draws the eye to the characters
+  const prog = clamp((g - s0) / sceneDur(i));
+  const z = z0 * (1 + 0.028 * prog * prog * (3 - 2 * prog));
   const pal = out.bg === 'home' && !out.pal ? PAL.home : out.pal;
   const tg = gFrame / FPS;
   // handheld camera: very small breathing drift (keeps the frame alive without looking shaky)
@@ -75,6 +89,7 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
   const cy = cy0 + Math.sin(tg * 0.7 + 2 + i) * 1.4;
   const roll = Math.sin(tg * 0.5 + i) * 0.12;
   const bgProps = out.bgProps ?? {};
+  const rig = rigFor(out.bg, pal, (bgProps as { dusk?: boolean }).dusk);
 
   // actors sitting / standing behind a counter or table: their arms are drawn AFTER props so that
   // hands rest ON the ledger/counter instead of disappearing underneath it.
@@ -95,6 +110,8 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
   return (
     <AbsoluteFill style={{ opacity: fade }}>
       <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
+        <TextureDefs />
+        <RimDefs id={String(i)} rig={rig} />
         <defs>
           <filter id={`dof${i}`} x="-5%" y="-5%" width="110%" height="110%">
             <feGaussianBlur stdDeviation={1.5} />
@@ -112,7 +129,9 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
           </g>
           {out.bgFront}
           {back.map((a, k) => (
-            <Actor key={`b${k}${a.id}`} a={a} t={tg} g={g} part={armsOver(a) ? 'body' : 'all'} />
+            <g key={`b${k}${a.id}`} filter={`url(#rim${i})`}>
+              <Actor a={a} t={tg} g={g} part={armsOver(a) ? 'body' : 'all'} light={rig.dir} />
+            </g>
           ))}
           {out.bg === 'shop' && out.counter !== false && <ShopCounter pal={pal} t={tg} />}
           {out.bg === 'home' && out.table !== false && <DiningTable pal={pal} />}
@@ -120,12 +139,16 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
           {over.length > 0 && (
             <g clipPath={`url(#armclip${i})`}>
               {over.map((a, k) => (
-                <Actor key={`o${k}${a.id}`} a={a} t={tg} g={g} part="arms" />
+                <g key={`o${k}${a.id}`} filter={`url(#rim${i})`}>
+                  <Actor a={a} t={tg} g={g} part="arms" light={rig.dir} />
+                </g>
               ))}
             </g>
           )}
           {front.map((a, k) => (
-            <Actor key={`f${k}${a.id}`} a={a} t={tg} g={g} />
+            <g key={`f${k}${a.id}`} filter={`url(#rim${i})`}>
+              <Actor a={a} t={tg} g={g} light={rig.dir} />
+            </g>
           ))}
           {out.front}
         </g>
@@ -136,10 +159,14 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
             <stop offset="1" stopColor="#000" stopOpacity={pal.vig} />
           </radialGradient>
         </defs>
+        <ShadeLayer id={i} rig={rig} t={tg} />
+        <LightLayer id={i} t={tg} rig={rig} lamp={!!(bgProps as { dusk?: boolean }).dusk} />
         <rect width={WIDTH} height={HEIGHT} fill={pal.tint} opacity={pal.tintOp} />
         <Atmosphere t={tg} warm={warm} id={i} />
+        <Halation rig={rig} id={i} />
         <rect width={WIDTH} height={HEIGHT} fill={`url(#vg${i})`} />
         {out.overlay}
+        <Texture />
       </svg>
     </AbsoluteFill>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { PAL } from '../art/palette';
 import { ActorSpec } from '../art/Person';
-import { Key, Ledger, OrderPaper, Pen, Sandals, Motorcycle, Cash, Sack, Lamp } from '../art/Props';
+import { Key, Ledger, OrderPaper, Sandals, Motorcycle, Cash, Sack, Lamp } from '../art/Props';
 import { bounceOut, clamp, kf, kf2, lerp, sway, V2, easeOut } from '../lib/anim';
 import { AmarWord, COUNTER_Y, Ctx, KEY_POS, SceneOut, bWrite, camSeq, walkTo } from './kit';
 

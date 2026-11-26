@@ -1,5 +1,6 @@
 import React from 'react';
-import { clamp, ik, lerp, mixHex, sway, V2 } from '../lib/anim';
+import { clamp, ik, lerp, mixHex, smooth, sway, V2 } from '../lib/anim';
+import { breathWave, smoothSaccade, weightShift } from '../lib/life';
 import type { Viseme } from '../lib/lipsync';
 
 export type Expr =
@@ -106,6 +107,10 @@ export interface ActorSpec {
   seed?: number;
   armsOver?: boolean; // arms are drawn in a later pass (in front of counter / ledger)
   part?: 'all' | 'body' | 'arms';
+  light?: number; // key-light direction (-1 left / +1 right) → cast shadow side
+  dTilt?: number; // head-tilt velocity (follow-through of hair / head)
+  dEmph?: number; // stress velocity
+  anti?: number; // 0..1 anticipation (stress is about to land)
 }
 
 const OUT = '#2b1d17';
@@ -284,7 +289,7 @@ const Arm: React.FC<{
 /* ------------------------------ LEG ------------------------------ */
 const Leg: React.FC<{
   hx0: number; hy0: number; tx: number; ty: number; w: number; pants: string; shoes: string; dir: 1 | -1; rot: number; front: boolean; cuffC: string;
-}> = ({ hx0, hy0, tx, ty, w, pants, shoes, dir, rot, front, cuffC }) => {
+}> = ({ hx0, hy0, tx, ty, w, pants, shoes, dir, rot, front }) => {
   const { ex, ey, hx, hy } = ik(hx0, hy0, tx, ty, LEG1, LEG2, -1);
   const c = front ? pants : shade(pants, 0.18);
   const dk = shade(c, 0.28);
@@ -321,20 +326,19 @@ const Leg: React.FC<{
 
 /* ------------------------------ HEAD ------------------------------ */
 function Head({
-  d, ep, vis, look, lookY, blink, uid, t, seed, emph,
+  d, ep, vis, look, lookY, blink, uid, t, seed, emph, hairRot, hairDy,
 }: {
-  d: CharDef; ep: EP; vis: Viseme; look: number; lookY: number; blink: number; uid: string; t: number; seed: number; emph: number;
+  d: CharDef; ep: EP; vis: Viseme; look: number; lookY: number; blink: number; uid: string; t: number; seed: number; emph: number; hairRot: number; hairDy: number;
 }) {
   // eyes never stare dead still: tiny saccades
-  const sacT = Math.floor(t * 0.85 + seed * 0.37);
-  const hash = (n: number) => Math.sin(n * 127.1 + seed * 31.7) * 43758.5453 % 1;
-  const sacX = hash(sacT) * 0.1;
-  const sacY = hash(sacT + 9.1) * 0.08;
+  const sac = smoothSaccade(t, seed);
+  const sacX = sac.x * 0.15;
+  const sacY = sac.y * 0.11;
   const lk = clamp(look + sacX, -1.1, 1.1);
   const lky = clamp(lookY + sacY, -1, 1);
   const hl = lk * 13;
   const hy = lky * 6;
-  const eyeOpen = clamp(ep.eye * (1 - blink), 0.04, 1.4);
+  const eyeOpen = clamp(ep.eye * (1 - blink) * (1 - Math.max(0, lky) * 0.16), 0.04, 1.4);
   const mc = ep.mc;
 
   const brow = (side: -1 | 1) => {
@@ -498,7 +502,7 @@ function Head({
   const nose = hl * 1.1;
   return (
     <g>
-      {hairBack}
+      <g transform={`translate(0 ${hairDy * 0.6}) rotate(${hairRot * 0.7} 0 -10)`}>{hairBack}</g>
       {/* ears */}
       <g>
         <ellipse cx={-50 + hl * 0.4} cy={2} rx={8} ry={13} fill={d.skin} stroke={OUT} strokeWidth={3} />
@@ -524,7 +528,7 @@ function Head({
           {ep.ba > 0.5 ? <path d={`M ${hl - 4} -34 l -2 -9 M ${hl + 5} -34 l 2 -9`} /> : <path d={`M ${hl - 24} -46 q 24 -6 48 0 M ${hl - 18} -52 q 18 -5 36 0`} />}
         </g>
       )}
-      {hairFront}
+      <g transform={`translate(0 ${hairDy}) rotate(${hairRot} 0 -10)`}>{hairFront}</g>
       {brow(-1)}
       {brow(1)}
       {eye(-1)}
@@ -561,7 +565,6 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   const flip = a.flip ? -1 : 1;
   const y = a.y ?? 930;
   const sit = a.sit ?? 0;
-  const lean = a.lean ?? 0;
   const seed = a.seed ?? a.id.charCodeAt(0);
   const uid = a.id;
   const lookL = (a.look ?? 0) * flip; // look is authored in screen-space
@@ -591,22 +594,36 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   const dbl = (t * 0.29 + seed * 0.137 + 0.05) % 1;
   const bl = (c: number) => (c > 0.965 ? Math.sin(((c - 0.965) / 0.035) * Math.PI) : 0);
   const blink = Math.max(bl(cyc), Math.floor(t * 0.29 + seed * 0.137) % 3 === 0 ? bl(dbl) : 0);
-  const breath = sway(t, 2.2, 3.4, seed);
-  const weight = walking ? 0 : sway(t, 3.2, 7.5, seed); // slow weight shift
+  // ---- life layer: breathing, held weight shifts, follow-through ----
+  const amp = 1 + gest * 0.7;
+  const br = breathWave(t, seed); // 0..1 asymmetric breath
+  const brLag = breathWave(t - 0.28, seed); // arms / hands follow the chest a moment later
+  const breath = (br - 0.5) * 4.4 * amp;
+  const wsh = walking ? 0 : weightShift(t, seed); // -1..1
+  const hipX = wsh * 4.5;
+  const weight = walking ? 0 : hipX * 0.55;
+  const SLACK = 0; // legs stay straight (knees never bow)
+  const lean = (a.lean ?? 0) - wsh * 1.3;
+  const dTilt = a.dTilt ?? 0;
+  const dEmph = a.dEmph ?? 0;
+  const anti = clamp(a.anti ?? 0, 0, 1);
+  const handDrag = walking ? 0 : -(weight - weightShift(t - 0.2, seed) * 7 * 0.55);
+  const sysc = 1 + emph * 0.009 - anti * 0.006 + (br - 0.5) * 0.004 * amp; // squash & stretch (volume kept)
+  const sxsc = 1 / sysc;
   const p = a.walk ?? 0;
 
   // world -> local (undoes lean + weight shift)
   const toLocal = (pt: V2): V2 => {
     const qx = ((pt[0] - a.x) / s) * flip;
-    const qy = (pt[1] - y - sit) / s;
+    const qy = (pt[1] - y - sit) / s - SLACK;
     const r = (-lean * Math.PI) / 180;
     const dx = qx;
     const dy = qy - HIP_Y;
     return [dx * Math.cos(r) - dy * Math.sin(r) - weight, dx * Math.sin(r) + dy * Math.cos(r) + HIP_Y];
   };
-  const shY = -482 + breath * 0.35;
-  const fShoulder: V2 = [ws - 10, shY];
-  const rShoulder: V2 = [-(ws - 10), shY];
+  const shY = -482 - br * 3.4 * amp;
+  const fShoulder: V2 = [(ws - 10) * (1 + br * 0.02), shY];
+  const rShoulder: V2 = [-(ws - 10) * (1 + br * 0.02), shY];
 
   // idle / gesture / walking arm targets
   const lift = clamp(gest * 2.4 - 0.25, 0, 1);
@@ -614,8 +631,8 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   const beat2 = 0.5 + 0.5 * Math.sin(t * 2.1 + seed + 2);
   const swing = walking ? Math.sin(p) : 0;
   const talkingGesture = !walking && lift > 0.02;
-  let idleF: V2 = [ws + 4 + sway(t, 2.5, 3.1, seed), -238 + sway(t, 2, 2.7, seed)];
-  let idleR: V2 = [-(ws + 4) + sway(t, 2.5, 3.3, seed + 1), -238 + sway(t, 2, 2.9, seed + 2)];
+  let idleF: V2 = [ws + 4 + sway(t, 2.5, 3.1, seed) + handDrag, -238 + sway(t, 2, 2.7, seed) - brLag * 2.6];
+  let idleR: V2 = [-(ws + 4) + sway(t, 2.5, 3.3, seed + 1) + handDrag, -238 + sway(t, 2, 2.9, seed + 2) - brLag * 2.6];
   if (walking) {
     idleF = [ws + 6 - swing * 52, -258 + Math.abs(Math.cos(p)) * -10];
     idleR = [-(ws + 6) + swing * 52 * 0.9, -258 + Math.abs(Math.cos(p)) * -10];
@@ -625,11 +642,14 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
       const al = ((20 + 7 * Math.sin(t * 1.3 + seed + sd)) * Math.PI) / 180;
       const ex = sd * (ws - 10) + sd * Math.sin(al) * UP;
       const ey = shY + Math.cos(al) * UP;
-      const be = ((14 + amt * (40 + 85 * bt)) * Math.PI) / 180;
-      return [ex + sd * Math.sin(be) * LO * 0.98, ey + Math.cos(be) * LO * 0.98];
+      const bdeg = 14 + amt * (36 + 70 * bt);
+      const be = (bdeg * Math.PI) / 180;
+      // forearm rises in FRONT of the body (foreshortened) instead of flapping out like a wing
+      const inward = smooth((bdeg - 40) / 60);
+      return [ex + sd * Math.sin(be) * LO * (0.98 - 0.55 * inward), ey + Math.cos(be) * LO * 0.98];
     };
-    idleF = arm(1, lift, beat);
-    idleR = arm(-1, lift * lift * 0.8, beat2);
+    idleF = arm(1, clamp(lift + emph * 0.25 + anti * 0.15), beat);
+    idleR = arm(-1, lift * lift * 0.55, beat2);
   }
   const jit = (n: number): V2 => [sway(t, 1.6, 2.3, seed + n), sway(t, 1.6, 1.9, seed + n + 4)];
   const jf = jit(1);
@@ -655,13 +675,16 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   const footRot = (ph: number, c: number) => (walking ? (c > 0 ? -9 * c : 16 * Math.max(0, -ph)) : 0);
   const dirF: 1 | -1 = 1;
   const dirR: 1 | -1 = walking ? 1 : -1;
-  const hipSway = walking ? Math.sin(p) * 3 : weight * 0.35;
+  const hipSway = walking ? Math.sin(p) * 3 : 0;
   const opacity = a.op ?? 1;
   const tShade = shade(d.shirt, 0.22);
   const torsoPath = `M ${-ws} -486 Q ${-ws - 4} -380 ${-ww} -272 L ${ww} -272 Q ${ws + 4} -380 ${ws} -486 Q ${ws * 0.55} -510 18 -514 L -18 -514 Q ${-ws * 0.55} -510 ${-ws} -486 Z`;
   const cid = `clip-${a.id}`;
-  const headTilt = (a.tilt ?? 0) * flip + sway(t, 0.8, 5, seed) + (walking ? Math.sin(p * 2) * 0.8 : 0);
-  const headDy = -590 + breath * 0.6 + (walking ? Math.cos(p * 2) * 2 : 0) + emph * 3;
+  const headTilt = (a.tilt ?? 0) * flip - lean * 0.5 - dTilt * 0.9 + wsh * 0.7 + sway(t, 0.8, 5, seed) + sway(t, 0.35, 2.3, seed + 5) + (walking ? Math.sin(p * 2) * 0.8 : 0);
+  // hair / cap lag behind the head (overlapping action)
+  const hairRot = clamp(-dTilt * 2.6 + sway(t, 0.7, 2.6, seed + 3), -7, 7);
+  const hairDy = clamp(-dEmph * 9, -4, 4);
+  const headDy = -590 - br * 3.6 * amp + 1.8 + (walking ? Math.cos(p * 2) * 2 : 0) + emph * 4.5 - anti * 3;
 
   const rearArm = (
     <Arm sx={rShoulder[0]} sy={rShoulder[1]} tx={hr[0]} ty={hr[1]} side={-1} w={armW} d={d} front={false} flat={flatR} curl={curlR} />
@@ -744,7 +767,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
 
   const head = (
     <g transform={`translate(${lookL * 3} ${headDy}) rotate(${headTilt} 0 80)`}>
-      <Head d={d} ep={ep} vis={vis} look={lookL} lookY={a.lookY ?? 0} blink={blink} uid={uid} t={t} seed={seed} emph={emph} />
+      <Head d={d} ep={ep} vis={vis} look={lookL} lookY={a.lookY ?? 0} blink={blink} uid={uid} t={t} seed={seed} emph={emph} hairRot={hairRot} hairDy={hairDy} />
     </g>
   );
 
@@ -764,16 +787,27 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
     </g>
   ) : (
     <g>
-      <Leg hx0={-22} hy0={-276} tx={rf[0]} ty={rf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirR} rot={footRot(phR, -Math.cos(p))} front={false} cuffC={d.pants} />
-      <Leg hx0={22} hy0={-276} tx={lf[0]} ty={lf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirF} rot={footRot(phF, Math.cos(p))} front cuffC={d.pants} />
-      <rect x={-ww + 2} y={-300} width={(ww - 2) * 2} height={46} rx={14} fill={d.pants} stroke={OUT} strokeWidth={3.5} />
+      <Leg hx0={-22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, wsh) * 0.8)} tx={rf[0]} ty={rf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirR} rot={footRot(phR, -Math.cos(p))} front={false} cuffC={d.pants} />
+      <Leg hx0={22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, -wsh) * 0.8)} tx={lf[0]} ty={lf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirF} rot={footRot(phF, Math.cos(p))} front cuffC={d.pants} />
+      <rect x={-ww + 2 + hipX} y={-300 + SLACK} width={(ww - 2) * 2} height={46} rx={14} fill={d.pants} stroke={OUT} strokeWidth={3.5} />
     </g>
   );
 
+  const lightDir = a.light ?? -1;
   const shadow = (
     <g transform={`translate(0 ${-sit})`}>
-      <ellipse cx={0} cy={6} rx={104 * bw} ry={16} fill="#000" opacity={0.2} />
-      <ellipse cx={0} cy={5} rx={70 * bw} ry={10} fill="#000" opacity={0.2} />
+      <defs>
+        <radialGradient id={`sh-${uid}`}>
+          <stop offset="0" stopColor="#0a0705" stopOpacity={0.62} />
+          <stop offset="0.55" stopColor="#0a0705" stopOpacity={0.3} />
+          <stop offset="1" stopColor="#0a0705" stopOpacity={0} />
+        </radialGradient>
+      </defs>
+      {/* long soft cast shadow away from the key light + tight contact shadow under the feet */}
+      <ellipse cx={-lightDir * 46} cy={8} rx={150 * bw} ry={19} fill={`url(#sh-${uid})`} opacity={0.75} />
+      <ellipse cx={0} cy={5} rx={96 * bw} ry={12} fill={`url(#sh-${uid})`} />
+      <ellipse cx={-26} cy={3} rx={30} ry={6} fill="#000" opacity={0.35} />
+      <ellipse cx={26} cy={3} rx={30} ry={6} fill="#000" opacity={0.35} />
     </g>
   );
 
@@ -783,7 +817,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
       <g transform={`translate(0 ${bob})`}>
         {part !== 'arms' && shadow}
         {part !== 'arms' && <g transform={`translate(${hipSway} 0)`}>{legs}</g>}
-        <g transform={`rotate(${lean} 0 ${HIP_Y})`}>
+        <g transform={`translate(0 ${SLACK}) translate(0 ${HIP_Y}) scale(${sxsc} ${sysc}) translate(0 ${-HIP_Y}) rotate(${lean} 0 ${HIP_Y})`}>
           <g transform={`translate(${weight} 0)`}>
             {part === 'arms' ? (
               <>
@@ -793,7 +827,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
             ) : (
               <>
                 {part === 'all' && rearArm}
-                <g transform={`translate(0 ${-(-272)}) scale(1 ${1 + breath * 0.0016}) translate(0 ${-272})`}>{torso}</g>
+                <g transform={`translate(0 -272) scale(${1 + br * 0.02 * amp} ${1 + br * 0.011 * amp}) translate(0 272)`}>{torso}</g>
                 {head}
                 {part === 'all' && frontArm}
               </>

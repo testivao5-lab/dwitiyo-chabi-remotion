@@ -1,6 +1,6 @@
 import { PAL } from '../art/palette';
 import { ActorSpec } from '../art/Person';
-import { Ledger, Key, KeyRing, Pen, Cash, Sandals } from '../art/Props';
+import { Ledger, Key, KeyRing, Cash, Sandals } from '../art/Props';
 import { clamp, easeOut, kf2, lerp, sway, V2, easeInOut } from '../lib/anim';
 import { Book, COUNTER_Y, Ctx, KEY_POS, SceneOut, camSeq, walkTo } from './kit';
 
@@ -194,7 +194,7 @@ export const s27 = (c: Ctx): SceneOut => {
     pal: PAL.ending,
     cam: camSeq(t, [
       { d: c.T(183) - 0.2, a: [1450, 500, 1.6], b: [1480, 500, 1.7] },
-      { d: tB - c.T(183) + 0.2, a: [1520, 580, 2.3], b: [1500, 590, 2.1] },
+      { d: tB - c.T(183) + 0.2, a: [1520, 520, 2.0], b: [1500, 530, 1.9] },
       { d: 99, a: [1520, 480, 1.9], b: [1500, 490, 1.7] },
     ]),
     actors,
@@ -214,7 +214,7 @@ export const s28 = (c: Ctx): SceneOut => {
     pal: PAL.ending,
     cam: camSeq(t, [
       { d: 3.4, a: [1220, 520, 1.7], b: [1220, 520, 1.9] },
-      { d: 99, a: [1230, 580, 2.9], b: [1235, 580, 3.2] },
+      { d: 99, a: [1230, 500, 2.2], b: [1235, 505, 2.4] },
     ]),
     actors: [
       { id: 'M', x: 1340, flip: true, expr: 'neutral', look: -0.6, lookY: 0.7, lean: 8, hf: done ? [1270, 596] : [keyPos[0] - 4, keyPos[1] - 20], hr: [1370, 610], z: 'back' },
@@ -243,7 +243,7 @@ export const s29 = (c: Ctx): SceneOut => {
     bgProps: { shutter: 1 - 0.55 * open, doorGlow: open, garland: false },
     cam: camSeq(t, [
       { d: tClosed - 0.2, a: [1060, 520, 1.5], b: [1150, 520, 1.75] },
-      { d: tOpen - tClosed + 0.2, a: [1170, 640, 2.3], b: [1180, 650, 2.5] },
+      { d: tOpen - tClosed + 0.2, a: [1170, 545, 1.9], b: [1180, 555, 2.05] },
       { d: 99, a: [1080, 490, 1.9], b: [960, 520, 1.0] },
     ]),
     actors: [
