@@ -142,8 +142,8 @@ export interface ActorSpec {
 }
 
 const OUT = '#2b1d17';
-const UP = 150;
-const LO = 140;
+const UP = 130;
+const LO = 120;
 const HIP_Y = -272;
 
 function Limb({
@@ -440,8 +440,8 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   };
   const fShoulder: V2 = [ws - 10, -482 + breath * 0.3];
   const rShoulder: V2 = [-(ws - 10), -482 + breath * 0.3];
-  const idleF: V2 = [ws + 14 + sway(t, 3, 3.1, seed), -240 + sway(t, 3, 2.7, seed)];
-  const idleR: V2 = [-(ws + 14) + sway(t, 3, 3.3, seed + 1), -240 + sway(t, 3, 2.9, seed + 2)];
+  const idleF: V2 = [ws + 10 + sway(t, 3, 3.1, seed), -250 + sway(t, 3, 2.7, seed)];
+  const idleR: V2 = [-(ws + 10) + sway(t, 3, 3.3, seed + 1), -250 + sway(t, 3, 2.9, seed + 2)];
   const hf = a.hf ? toLocal(a.hf) : idleF;
   const hr = a.hr ? toLocal(a.hr) : idleR;
 
@@ -487,8 +487,8 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
           </g>
         ) : (
           <g>
-            <Limb sx={-24} sy={-274} tx={rf[0]} ty={rf[1] - 18} l1={140} l2={134} bend={-1} w={legW} c1={pantsShade} c2={pantsShade} foot shoe={d.shoes} />
-            <Limb sx={24} sy={-274} tx={lf[0]} ty={lf[1] - 18} l1={140} l2={134} bend={-1} w={legW} c1={d.pants} c2={d.pants} foot shoe={d.shoes} />
+            <Limb sx={-24} sy={-274} tx={rf[0]} ty={rf[1] - 4} l1={142} l2={136} bend={-1} w={legW} c1={pantsShade} c2={pantsShade} foot shoe={d.shoes} />
+            <Limb sx={24} sy={-274} tx={lf[0]} ty={lf[1] - 4} l1={142} l2={136} bend={-1} w={legW} c1={d.pants} c2={d.pants} foot shoe={d.shoes} />
             <rect x={-ww + 2} y={-300} width={(ww - 2) * 2} height={46} rx={14} fill={d.pants} stroke={OUT} strokeWidth={3.5} />
           </g>
         )}

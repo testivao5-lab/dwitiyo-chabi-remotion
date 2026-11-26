@@ -1,4 +1,3 @@
-import React from 'react';
 import { PAL } from '../art/palette';
 import { ActorSpec } from '../art/Person';
 import { Ledger, Key, KeyRing, Pen, Cash, Sandals } from '../art/Props';

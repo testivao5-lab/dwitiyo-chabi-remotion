@@ -5,17 +5,6 @@ import { rng, mixHex, sway } from '../lib/anim';
 const OUT = '#2b1d17';
 
 /* ---------- small helpers ---------- */
-const Plank: React.FC<{ x: number; y: number; w: number; h: number; c: string; dark: string; gap?: number }> = ({
-  x, y, w, h, c, dark, gap = 120,
-}) => (
-  <g>
-    <rect x={x} y={y} width={w} height={h} fill={c} />
-    {Array.from({ length: Math.ceil(w / gap) }).map((_, i) => (
-      <line key={i} x1={x + i * gap} y1={y} x2={x + i * gap} y2={y + h} stroke={dark} strokeWidth={3} opacity={0.4} />
-    ))}
-  </g>
-);
-
 function ShelfItems({ x0, x1, yb, pal, seed, maxH = 118 }: { x0: number; x1: number; yb: number; pal: Pal; seed: number; maxH?: number }) {
   const r = rng(seed);
   const out: React.ReactNode[] = [];

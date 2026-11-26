@@ -34,7 +34,7 @@ export const s01 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       b,
-      { id: 'M', x: 880, expr: 'sad', hf: hand, look: 0.4, lookY: 0.2, z: 'front' },
+      { id: 'M', x: 880, expr: 'sad', hf: t < drop + 1.8 ? hand : null, look: 0.4, lookY: 0.2, z: 'front' },
     ],
     props: (
       <>

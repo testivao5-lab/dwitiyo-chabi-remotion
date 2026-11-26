@@ -1,6 +1,5 @@
-import React from 'react';
 import { PAL } from '../art/palette';
-import { ActorSpec, Person } from '../art/Person';
+import { Person } from '../art/Person';
 import { Ledger, OrderPaper, Phone, Plate, Key, Sack, Sandals, Lamp } from '../art/Props';
 import { clamp, easeOut, kf, kf2, lerp, sway, V2 } from '../lib/anim';
 import { Book, COUNTER_Y, Ctx, KEY_POS, SceneOut, camSeq, walkTo } from './kit';
@@ -104,7 +103,6 @@ export const s13 = (c: Ctx): SceneOut => {
 /* S14 — the key goes down on the counter, Mahin leaves */
 export const s14 = (c: Ctx): SceneOut => {
   const { t } = c;
-  const tB = c.T(91, 1);
   const tM1 = c.T(93, 1);
   const tM2 = c.T(95, 1);
   const tKey = c.T(97) + 0.6;
@@ -250,7 +248,7 @@ export const s18 = (c: Ctx): SceneOut => {
     cam: inCall
       ? camSeq(t, [{ d: 99, a: [1000, 480, 1.28], b: [1020, 480, 1.38] }])
       : t < tRefl
-        ? camSeq(t - tFind, [{ d: 2.4, a: [1100, 520, 1.3], b: [800, 600, 1.7] }, { d: 99, a: [740, 700, 2.3], b: [715, 740, 2.8] }])
+        ? camSeq(t - tFind, [{ d: 2.4, a: [1100, 520, 1.3], b: [800, 600, 1.7] }, { d: 99, a: [730, 580, 1.75], b: [715, 600, 2.0] }])
         : camSeq(t - tRefl, [{ d: 99, a: [720, 480, 2.4], b: [715, 470, 2.7] }]),
     actors: [
       {
