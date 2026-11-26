@@ -242,9 +242,9 @@ export const s29 = (c: Ctx): SceneOut => {
     pal: PAL.ending,
     bgProps: { shutter: 1 - 0.55 * open, doorGlow: open, garland: false },
     cam: camSeq(t, [
-      { d: tClosed - 0.2, a: [1060, 560, 1.5], b: [1150, 600, 1.9] },
+      { d: tClosed - 0.2, a: [1060, 520, 1.5], b: [1150, 520, 1.75] },
       { d: tOpen - tClosed + 0.2, a: [1170, 640, 2.3], b: [1180, 650, 2.5] },
-      { d: 99, a: [1080, 560, 1.9], b: [960, 520, 1.0] },
+      { d: 99, a: [1080, 490, 1.9], b: [960, 520, 1.0] },
     ]),
     actors: [
       { id: 'B', x: 960, expr: t < tOpen ? 'soft' : 'smile', look: 0.9, z: 'front', tilt: -2 },

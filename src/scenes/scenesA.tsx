@@ -237,7 +237,7 @@ export const s06 = (c: Ctx): SceneOut => {
         <AmarWord x={960} y={430} size={Math.min(420, 130 + (t - w1) * 140)} op={opWord(w1, w1 + 2.2) * 0.95} rot={-3} />
         <AmarWord x={560} y={400} size={170} op={opWord(w2, w2 + 3.6) * 0.9} rot={-4} />
         <AmarWord x={1000} y={560} size={230} op={opWord(w3, w3 + 3.1) * 0.9} rot={2} />
-        <AmarWord x={1380} y={380} size={310} op={opWord(w4, w4 + 3.2) * 0.9} rot={-2} />
+        <AmarWord x={1530} y={215} size={250} op={opWord(w4, w4 + 3.2) * 0.9} rot={-2} />
         <AmarWord x={290} y={980} size={110 + Math.max(0, t - tPride) * 14} op={clamp((t - tPride) / 1) * 0.5} rot={-6} />
       </>
     ),

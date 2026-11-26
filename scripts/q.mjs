@@ -1,0 +1,11 @@
+import path from 'node:path';
+import fs from 'node:fs';
+import { bundle } from '@remotion/bundler';
+import { renderStill, selectComposition } from '@remotion/renderer';
+const frames = process.argv[2].split(',').map(Number);
+const outDir = process.argv[3] || 'out/q';
+fs.mkdirSync(outDir, { recursive: true });
+const serveUrl = await bundle({ entryPoint: path.resolve('src/index.ts'), publicDir: path.resolve('public') });
+const inputProps = { audio: false };
+const composition = await selectComposition({ serveUrl, id: 'Film', inputProps });
+for (const f of frames) await renderStill({ composition, serveUrl, frame: f, output: `${outDir}/f${String(f).padStart(5, '0')}.jpg`, inputProps, imageFormat: 'jpeg', jpegQuality: 80, scale: 0.6 });
