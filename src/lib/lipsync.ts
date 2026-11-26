@@ -41,7 +41,7 @@ const TONGUE = new Set('তথদধনলরসশষটঠডঢণ'.split('')
 const TEETH = new Set('তথদধসশষজঝচছযয়'.split(''));
 const isCons = (c: string) => {
   const n = c.codePointAt(0) ?? 0;
-  return (n >= 0x0995 && n <= 0x09b9) || n === 0x09dc || n === 0x09dd || n === 0x09df || n === 0x09ce;
+  return (n >= 0x0995 && n <= 0x09b9) || n === 0x09dc || n === 0x09dd || n === 0x09df;
 };
 
 interface Syl {
@@ -50,6 +50,7 @@ interface Syl {
   w: number; // relative weight
   nasal: boolean;
   weak: boolean;
+  coda?: boolean; // closed by a vowel-less final consonant (ৎ)
 }
 
 export function syllabify(text: string): Syl[] {
@@ -62,6 +63,14 @@ export function syllabify(text: string): Syl[] {
     const c = chars[i];
     if (c === '্') {
       afterHasanta = true;
+      continue;
+    }
+    if (c === 'ৎ') {
+      // khanda-ta: a bare consonant with NO inherent vowel → closes the current syllable (coda)
+      if (cur) cur.coda = true;
+      afterHasanta = false;
+      const nxt = chars[i + 1];
+      if ((nxt === undefined || nxt === ' ') && out.length) wordLast.push(out.length - 1);
       continue;
     }
     if (isCons(c)) {
@@ -87,7 +96,7 @@ export function syllabify(text: string): Syl[] {
     if ((nx === undefined || nx === ' ') && out.length) wordLast.push(out.length - 1);
   }
   // word-final inherent vowel is mostly swallowed in Bengali
-  for (const w of wordLast) if (out[w] && out[w].v === 'o' && out[w].on) out[w].weak = true;
+  for (const w of wordLast) if (out[w] && out[w].v === 'o' && out[w].on && !out[w].coda) out[w].weak = true;
   return out;
 }
 
@@ -175,6 +184,7 @@ function shapeOf(s: Syl, p: number, amp: number, nextV: VowelKey | null): Viseme
     press = Math.max(press, q * 0.6);
     open *= 1 - 0.5 * q;
   }
+  if (s.coda && p > 0.75) open *= 1 - 0.35 * sm((p - 0.75) / 0.25); // vowel-less final ৎ: jaw closes, no extra opening
   open *= 1 - press * 0.95;
   const teeth = Math.min(1, open * 1.6) * (s.on && TEETH.has(s.on) ? 1 : 0.75) * (1 - press);
   const tongue = s.on && TONGUE.has(s.on) && open > 0.2 ? Math.min(1, onsetP + 0.2) * 0.9 : open > 0.65 ? 0.5 : 0;

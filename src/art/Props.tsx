@@ -31,13 +31,6 @@ export const KeyRing: React.FC<{ x: number; y: number; s?: number; keys?: number
   </g>
 );
 
-export const Pen: React.FC<{ x: number; y: number; rot?: number }> = ({ x, y, rot = -30 }) => (
-  <g transform={`translate(${x} ${y}) rotate(${rot})`}>
-    <rect x={-4} y={-4} width={86} height={9} rx={4} fill="#2a4a6a" stroke={OUT} strokeWidth={2.5} />
-    <path d="M -4 -4 L -16 0 L -4 5 Z" fill="#e6d9b9" stroke={OUT} strokeWidth={2} />
-  </g>
-);
-
 /** open accounts ledger lying on the counter (side-on perspective) */
 export const Ledger: React.FC<{ x: number; y: number; s?: number; write?: number; lines?: number; hl?: number }> = ({
   x, y, s = 1, write = 1, lines = 6, hl = 0,
@@ -167,11 +160,3 @@ export const Sack: React.FC<{ x: number; y: number; s?: number; c?: string }> = 
   </g>
 );
 
-/** a polite pointing / gesture bubble-free "thought" dot trail used for memory transitions */
-export const Dots: React.FC<{ x: number; y: number; n?: number; c?: string; p?: number }> = ({ x, y, n = 3, c = '#fff', p = 1 }) => (
-  <g>
-    {Array.from({ length: n }).map((_, i) => (
-      <circle key={i} cx={x + i * 22} cy={y - i * 12} r={5 + i * 3} fill={c} opacity={Math.min(1, Math.max(0, p * n - i)) * 0.8} stroke="#2b1d17" strokeWidth={2} />
-    ))}
-  </g>
-);

@@ -1,7 +1,7 @@
 import React from 'react';
-import { ActorSpec } from '../art/Person';
+import { ActorSpec, CHARS } from '../art/Person';
 import { Pal } from '../art/palette';
-import { clamp, easeInOut, kf, sway, V2 } from '../lib/anim';
+import { clamp, easeInOut, V2 } from '../lib/anim';
 import { segEnd, segStart, sceneStart } from '../lib/story';
 
 export type Cam = [number, number, number];
@@ -13,20 +13,45 @@ export interface Shot {
   a: Cam;
   b?: Cam;
 }
-/** sequential camera shots — hard cut between them, eased drift inside each */
-export function camSeq(t: number, shots: Shot[]): Cam {
+/** sequential camera shots — hard cut between them, eased drift inside each.
+ *  The last shot may use `d >= 90` as a "until the end" sentinel: with `totalDur` (the duration of the scene / branch
+ *  the shots belong to) its effective duration becomes `max(0.2, totalDur - t0)`, so the final move actually plays. */
+export function camSeq(t: number, shots: Shot[], totalDur?: number): Cam {
   let t0 = 0;
   for (let i = 0; i < shots.length; i++) {
     const s = shots[i];
     const last = i === shots.length - 1;
-    if (t < t0 + s.d || last) {
-      const p = easeInOut(clamp((t - t0) / s.d));
+    const dur = last && s.d >= 90 && totalDur !== undefined ? Math.max(0.2, totalDur - t0) : s.d;
+    if (t < t0 + dur || last) {
+      const p = easeInOut(clamp((t - t0) / dur));
       const b = s.b ?? s.a;
       return [s.a[0] + (b[0] - s.a[0]) * p, s.a[1] + (b[1] - s.a[1]) * p, s.a[2] + (b[2] - s.a[2]) * p];
     }
-    t0 += s.d;
+    t0 += dur;
   }
   return WIDE;
+}
+
+/** Safety net for framing: if a visible actor's head would be cut by the top edge of the frame the camera is raised
+ *  just enough to keep ~14px of headroom. It is continuous (weights fade in/out), and deliberate macro shots whose
+ *  frame starts below the eyes (hands / paper inserts) are left untouched. `cam` must be the FINAL camera (incl. push-in). */
+export function headroom(cam: Cam, actors: ActorSpec[]): Cam {
+  const [cx, cy, z] = cam;
+  const half = 960 / z;
+  const topY = cy - 540 / z;
+  let shift = 0;
+  for (const a of actors) {
+    const d = CHARS[a.id];
+    const s = (a.scale ?? 1) * d.height;
+    const headTop = (a.y ?? 930) + (a.sit ?? 0) - 686 * s;
+    const eyesOut = headTop + 125 * s; // below this line the eyes are out of frame → deliberate macro insert
+    const inView = clamp((half - 30 - Math.abs(a.x - cx)) / 120);
+    const solid = clamp(((a.op ?? 1) - 0.2) / 0.5);
+    const notMacro = clamp((eyesOut - topY) / 40);
+    const need = Math.max(0, topY - (headTop - 14));
+    shift = Math.max(shift, need * inView * solid * notMacro);
+  }
+  return [cx, cy - shift, z];
 }
 
 export interface SceneOut {
@@ -50,6 +75,8 @@ export interface Ctx {
   g: number; // global seconds
   T: (line: number, k?: number) => number; // relative start of segment
   E: (line: number, k?: number) => number; // relative end of segment
+  /** camera for the whole scene: like camSeq(t, shots) but the final `d: 99` shot lasts until the scene ends */
+  cam: (shots: Shot[]) => Cam;
 }
 
 export const makeCtx = (scene: number, d: number, g: number): Ctx => {
@@ -60,6 +87,7 @@ export const makeCtx = (scene: number, d: number, g: number): Ctx => {
     g,
     T: (line, k = 0) => segStart(line, k) - s0,
     E: (line, k = -1) => segEnd(line, k) - s0,
+    cam: (shots) => camSeq(g - s0, shots, d),
   };
 };
 
@@ -69,7 +97,8 @@ export const FLOOR = 930;
 export const KEY_POS: V2 = [1075, 612];
 
 /** big brother writing in the ledger behind the counter */
-export function bWrite(t: number, o: Partial<ActorSpec> = {}, stop = false): ActorSpec {
+export function bWrite(t0: number, o: Partial<ActorSpec> = {}, stop = false): ActorSpec {
+  const t = Math.max(0, t0); // t can be slightly negative during the pre-roll of a cross-dissolve
   // handwriting: the pen travels along a line, flicks back to the next line, with small up/down strokes
   const cyc = (t * 0.34) % 1;
   const along = cyc < 0.86 ? cyc / 0.86 : 1 - (cyc - 0.86) / 0.14;
@@ -106,8 +135,6 @@ export function walkTo(
   return { x, walk: moving ? Math.abs(x - x0) / 46 : null, flip: x1 < x0 };
 }
 
-export const Cashbox = null;
-
 /** the word "আমার" as a visual motif */
 export const AmarWord: React.FC<{ x: number; y: number; size: number; op: number; color?: string; rot?: number }> = ({
   x, y, size, op, color = '#f4e6c4', rot = 0,
@@ -138,6 +165,3 @@ export const Book: React.FC<{ x: number; y: number; rot?: number; s?: number }> 
     <path d="M -14 -26 q 10 -8 20 0 t 20 0" stroke="#2b1d17" strokeWidth={2.5} fill="none" />
   </g>
 );
-
-export const ceilT = kf;
-export const wob = sway;

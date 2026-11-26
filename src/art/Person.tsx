@@ -105,7 +105,9 @@ export interface ActorSpec {
   op?: number;
   z?: 'back' | 'front';
   seed?: number;
-  armsOver?: boolean; // arms are drawn in a later pass (in front of counter / ledger)
+  /** which arms are drawn in the later "over-the-surface" pass (hands resting ON a counter / table). Arms that
+   *  are not masked stay in the body pass, i.e. behind the counter / table. */
+  armsMask?: { front: boolean; rear: boolean };
   part?: 'all' | 'body' | 'arms';
   light?: number; // key-light direction (-1 left / +1 right) → cast shadow side
   dTilt?: number; // head-tilt velocity (follow-through of hair / head)
@@ -128,6 +130,15 @@ const lite = (c: string, k: number) => mixHex(c, '#ffffff', k);
  *  upper arm never sticks out horizontally like a wing */
 function armIK(sx: number, sy: number, tx: number, ty: number, bend: 1 | -1) {
   const d = Math.hypot(tx - sx, ty - sy);
+  // hand held close to the body centre-line (book / paper in front of the waist or chest): the upper arm hangs
+  // naturally down and the forearm (foreshortened, pointing towards the viewer) comes back up to the hand, so
+  // the elbow drops instead of flaring out sideways like a chicken wing
+  if (Math.abs(tx - sx) < 75 && ty > sy + 80) {
+    const L1 = UP * 0.95;
+    const L2 = Math.max(d * 0.62, L1 - d + 6, 50);
+    const r = ik(sx, sy, tx, ty, L1, L2, bend);
+    return { ...r, k: L2 / LO };
+  }
   const k = clamp(d / 190, 0.55, 1);
   const r = ik(sx, sy, tx, ty, UP * k, LO * k, bend);
   return { ...r, k };
@@ -245,6 +256,8 @@ const Arm: React.FC<{
   const wF1 = w * 0.6;
   const up = [sx, sy, ex, ey];
   const fo = [ex, ey, hx, hy];
+  // rear arm folded in front of the torso: its shoulder cap must not poke out of the back shoulder like a stump
+  const tucked = !front && Math.abs(ex) < Math.abs(sx) - 6;
   // roll-up cuff position: slightly below the elbow
   const fl = Math.hypot(hx - ex, hy - ey) || 1;
   const cx = ex + ((hx - ex) / fl) * 16;
@@ -258,12 +271,12 @@ const Arm: React.FC<{
       <g>
         <Tube p={up} w0={wUp0} w1={wUp1} fill={OUT} stroke={OUT} sw={6.5} />
         <Tube p={fo} w0={wF0} w1={wF1} fill={OUT} stroke={OUT} sw={6.5} />
-        <circle cx={sx} cy={sy} r={w * 0.5} fill={OUT} stroke={OUT} strokeWidth={6.5} />
+        {!tucked && <circle cx={sx} cy={sy} r={w * 0.5} fill={OUT} stroke={OUT} strokeWidth={6.5} />}
       </g>
       <Tube p={up} w0={wUp0} w1={wUp1} fill={shirt} />
       <Tube p={fo} w0={wF0} w1={wF1} fill={foreC} />
       <circle cx={ex} cy={ey} r={wUp1 / 2} fill={shirt} />
-      <circle cx={sx} cy={sy} r={w * 0.48} fill={shirt} />
+      {!tucked && <circle cx={sx} cy={sy} r={w * 0.48} fill={shirt} />}
       {/* shading: shadow side + highlight */}
       <Tube p={[sx + 3, sy + 3, ex + 3, ey + 3]} w0={wUp0 * 0.45} w1={wUp1 * 0.4} fill={shirtDark} opacity={0.35} />
       <Tube p={fo.map((v, i) => v + (i % 2 === 0 ? 2.5 : 2.5))} w0={wF0 * 0.4} w1={wF1 * 0.4} fill={rolled ? skinDark : shirtDark} opacity={0.3} />
@@ -288,7 +301,7 @@ const Arm: React.FC<{
 
 /* ------------------------------ LEG ------------------------------ */
 const Leg: React.FC<{
-  hx0: number; hy0: number; tx: number; ty: number; w: number; pants: string; shoes: string; dir: 1 | -1; rot: number; front: boolean; cuffC: string;
+  hx0: number; hy0: number; tx: number; ty: number; w: number; pants: string; shoes: string; dir: 1 | -1; rot: number; front: boolean;
 }> = ({ hx0, hy0, tx, ty, w, pants, shoes, dir, rot, front }) => {
   const { ex, ey, hx, hy } = ik(hx0, hy0, tx, ty, LEG1, LEG2, -1);
   const c = front ? pants : shade(pants, 0.18);
@@ -558,7 +571,8 @@ function Head({
 }
 
 /* ------------------------------ PERSON ------------------------------ */
-export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
+/** `instanceId` must be unique per rendered <Person> (scene + actor + pass) so SVG gradient / clipPath ids never collide */
+export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> = ({ a, t, instanceId }) => {
   const d = CHARS[a.id];
   const part = a.part ?? 'all';
   const s = (a.scale ?? 1) * d.height;
@@ -566,7 +580,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   const y = a.y ?? 930;
   const sit = a.sit ?? 0;
   const seed = a.seed ?? a.id.charCodeAt(0);
-  const uid = a.id;
+  const uid = instanceId ?? a.id;
   const lookL = (a.look ?? 0) * flip; // look is authored in screen-space
   const walking = a.walk !== undefined && a.walk !== null;
   const bw = d.build;
@@ -607,7 +621,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   const dTilt = a.dTilt ?? 0;
   const dEmph = a.dEmph ?? 0;
   const anti = clamp(a.anti ?? 0, 0, 1);
-  const handDrag = walking ? 0 : -(weight - weightShift(t - 0.2, seed) * 7 * 0.55);
+  const handDrag = walking ? 0 : -(weight - weightShift(t - 0.2, seed) * 4.5 * 0.55);
   const sysc = 1 + emph * 0.009 - anti * 0.006 + (br - 0.5) * 0.004 * amp; // squash & stretch (volume kept)
   const sxsc = 1 / sysc;
   const p = a.walk ?? 0;
@@ -677,15 +691,15 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
   const dirR: 1 | -1 = walking ? 1 : -1;
   const hipSway = walking ? Math.sin(p) * 3 : 0;
   const opacity = a.op ?? 1;
-  const tShade = shade(d.shirt, 0.22);
   const torsoPath = `M ${-ws} -486 Q ${-ws - 4} -380 ${-ww} -272 L ${ww} -272 Q ${ws + 4} -380 ${ws} -486 Q ${ws * 0.55} -510 18 -514 L -18 -514 Q ${-ws * 0.55} -510 ${-ws} -486 Z`;
-  const cid = `clip-${a.id}`;
+  const cid = `clip-${uid}`;
   const headTilt = (a.tilt ?? 0) * flip - lean * 0.5 - dTilt * 0.9 + wsh * 0.7 + sway(t, 0.8, 5, seed) + sway(t, 0.35, 2.3, seed + 5) + (walking ? Math.sin(p * 2) * 0.8 : 0);
   // hair / cap lag behind the head (overlapping action)
   const hairRot = clamp(-dTilt * 2.6 + sway(t, 0.7, 2.6, seed + 3), -7, 7);
   const hairDy = clamp(-dEmph * 9, -4, 4);
   const headDy = -590 - br * 3.6 * amp + 1.8 + (walking ? Math.cos(p * 2) * 2 : 0) + emph * 4.5 - anti * 3;
 
+  const mask = a.armsMask ?? { front: true, rear: true };
   const rearArm = (
     <Arm sx={rShoulder[0]} sy={rShoulder[1]} tx={hr[0]} ty={hr[1]} side={-1} w={armW} d={d} front={false} flat={flatR} curl={curlR} />
   );
@@ -787,8 +801,8 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
     </g>
   ) : (
     <g>
-      <Leg hx0={-22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, wsh) * 0.8)} tx={rf[0]} ty={rf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirR} rot={footRot(phR, -Math.cos(p))} front={false} cuffC={d.pants} />
-      <Leg hx0={22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, -wsh) * 0.8)} tx={lf[0]} ty={lf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirF} rot={footRot(phF, Math.cos(p))} front cuffC={d.pants} />
+      <Leg hx0={-22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, wsh) * 0.8)} tx={rf[0]} ty={rf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirR} rot={footRot(phR, -Math.cos(p))} front={false} />
+      <Leg hx0={22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, -wsh) * 0.8)} tx={lf[0]} ty={lf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirF} rot={footRot(phF, Math.cos(p))} front />
       <rect x={-ww + 2 + hipX} y={-300 + SLACK} width={(ww - 2) * 2} height={46} rx={14} fill={d.pants} stroke={OUT} strokeWidth={3.5} />
     </g>
   );
@@ -813,7 +827,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
 
   return (
     <g transform={`translate(${a.x} ${y + sit}) scale(${flip * s} ${s})`} opacity={opacity}>
-      {defs}
+      {part !== 'arms' && defs}
       <g transform={`translate(0 ${bob})`}>
         {part !== 'arms' && shadow}
         {part !== 'arms' && <g transform={`translate(${hipSway} 0)`}>{legs}</g>}
@@ -821,22 +835,19 @@ export const Person: React.FC<{ a: ActorSpec; t: number }> = ({ a, t }) => {
           <g transform={`translate(${weight} 0)`}>
             {part === 'arms' ? (
               <>
-                {rearArm}
-                {frontArm}
+                {mask.rear && rearArm}
+                {mask.front && frontArm}
               </>
             ) : (
               <>
-                {part === 'all' && rearArm}
+                {(part === 'all' || !mask.rear) && rearArm}
                 <g transform={`translate(0 -272) scale(${1 + br * 0.02 * amp} ${1 + br * 0.011 * amp}) translate(0 272)`}>{torso}</g>
                 {head}
-                {part === 'all' && frontArm}
+                {(part === 'all' || !mask.front) && frontArm}
               </>
             )}
           </g>
         </g>
-      </g>
-      <g style={{ display: 'none' }}>
-        <circle r={0} fill={tShade} />
       </g>
     </g>
   );
