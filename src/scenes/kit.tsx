@@ -1,0 +1,135 @@
+import React from 'react';
+import { ActorSpec } from '../art/Person';
+import { Pal } from '../art/palette';
+import { clamp, easeInOut, kf, sway, V2 } from '../lib/anim';
+import { segEnd, segStart, sceneStart } from '../lib/story';
+
+export type Cam = [number, number, number];
+export const WIDE: Cam = [960, 540, 1];
+export const onX = (x: number, z = 2.3, cy = 470): Cam => [x, cy, z];
+
+export interface Shot {
+  d: number;
+  a: Cam;
+  b?: Cam;
+}
+/** sequential camera shots — hard cut between them, eased drift inside each */
+export function camSeq(t: number, shots: Shot[]): Cam {
+  let t0 = 0;
+  for (let i = 0; i < shots.length; i++) {
+    const s = shots[i];
+    const last = i === shots.length - 1;
+    if (t < t0 + s.d || last) {
+      const p = easeInOut(clamp((t - t0) / s.d));
+      const b = s.b ?? s.a;
+      return [s.a[0] + (b[0] - s.a[0]) * p, s.a[1] + (b[1] - s.a[1]) * p, s.a[2] + (b[2] - s.a[2]) * p];
+    }
+    t0 += s.d;
+  }
+  return WIDE;
+}
+
+export interface SceneOut {
+  bg: 'shop' | 'home' | 'room' | 'street';
+  pal: Pal;
+  cam: Cam;
+  actors: ActorSpec[];
+  props?: React.ReactNode;
+  front?: React.ReactNode;
+  overlay?: React.ReactNode;
+  counter?: boolean;
+  table?: boolean;
+  bgProps?: Record<string, unknown>;
+}
+
+export interface Ctx {
+  t: number; // seconds since scene start
+  d: number; // scene duration
+  g: number; // global seconds
+  T: (line: number, k?: number) => number; // relative start of segment
+  E: (line: number, k?: number) => number; // relative end of segment
+}
+
+export const makeCtx = (scene: number, d: number, g: number): Ctx => {
+  const s0 = sceneStart(scene);
+  return {
+    t: g - s0,
+    d,
+    g,
+    T: (line, k = 0) => segStart(line, k) - s0,
+    E: (line, k = -1) => segEnd(line, k) - s0,
+  };
+};
+
+/* -------- reusable staging -------- */
+export const COUNTER_Y = 628;
+export const FLOOR = 930;
+export const KEY_POS: V2 = [1075, 612];
+
+/** big brother writing in the ledger behind the counter */
+export function bWrite(t: number, o: Partial<ActorSpec> = {}, stop = false): ActorSpec {
+  const sx = stop ? 0 : Math.sin(t * 2.1) * 26 + Math.sin(t * 5.3) * 6;
+  const bob = stop ? 0 : Math.sin(t * 9) * 1.5;
+  return {
+    id: 'B',
+    x: 1480,
+    flip: true,
+    expr: 'stern',
+    lean: 13,
+    tilt: 6,
+    lookY: 0.85,
+    look: -0.4,
+    hf: [1380 + sx, COUNTER_Y - 4 + bob],
+    hr: [1520, COUNTER_Y - 2],
+    ...o,
+  };
+}
+
+export function walkTo(
+  t: number,
+  x0: number,
+  x1: number,
+  ts: number,
+  te: number,
+): { x: number; walk: number | null; flip: boolean } {
+  const p = easeInOut(clamp((t - ts) / (te - ts)));
+  const x = x0 + (x1 - x0) * p;
+  const moving = t > ts && t < te;
+  return { x, walk: moving ? Math.abs(x - x0) / 46 : null, flip: x1 < x0 };
+}
+
+export const Cashbox = null;
+
+/** the word "আমার" as a visual motif */
+export const AmarWord: React.FC<{ x: number; y: number; size: number; op: number; color?: string; rot?: number }> = ({
+  x, y, size, op, color = '#f4e6c4', rot = 0,
+}) => (
+  <text
+    x={x}
+    y={y}
+    fontSize={size}
+    fontFamily="'Noto Sans Bengali', 'Hind Siliguri', sans-serif"
+    fontWeight={800}
+    fill={color}
+    opacity={op}
+    textAnchor="middle"
+    transform={`rotate(${rot} ${x} ${y})`}
+    stroke="#2b1d17"
+    strokeWidth={size * 0.035}
+    paintOrder="stroke"
+  >
+    আমার
+  </text>
+);
+
+export const Book: React.FC<{ x: number; y: number; rot?: number; s?: number }> = ({ x, y, rot = 0, s = 1 }) => (
+  <g transform={`translate(${x} ${y}) rotate(${rot}) scale(${s})`}>
+    <rect x={-52} y={-70} width={104} height={140} rx={5} fill="#3a3a48" stroke="#2b1d17" strokeWidth={4} />
+    <rect x={-52} y={-70} width={16} height={140} fill="#2a2a34" stroke="#2b1d17" strokeWidth={3} />
+    <rect x={-22} y={-44} width={60} height={34} fill="#cdbb8b" stroke="#2b1d17" strokeWidth={2.5} />
+    <path d="M -14 -26 q 10 -8 20 0 t 20 0" stroke="#2b1d17" strokeWidth={2.5} fill="none" />
+  </g>
+);
+
+export const ceilT = kf;
+export const wob = sway;

@@ -1,0 +1,34 @@
+name: Preview stills (QA)
+on:
+  workflow_dispatch:
+    inputs:
+      frames:
+        description: "Comma separated frame numbers, or 'auto' (2 per scene)"
+        default: auto
+jobs:
+  stills:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: System libs for headless Chrome
+        run: sudo apt-get update && sudo apt-get install -y libnss3 libdbus-1-3 libatk1.0-0 libgbm-dev libasound2t64 libxrandr2 libxkbcommon-dev libxfixes3 libxcomposite1 libxdamage1 libatk-bridge2.0-0 libpango-1.0-0 libcairo2 libcups2 imagemagick
+      - run: npm install --no-audit --no-fund
+      - run: node scripts/stills.mjs "${{ github.event.inputs.frames }}"
+      - name: Contact sheets
+        run: |
+          cd out/stills
+          ls f*.png | split -l 6 - grp_
+          i=0
+          for g in grp_*; do
+            montage $(cat $g) -tile 2x3 -geometry 960x540+4+4 -background '#111' ../sheet_$(printf %02d $i).jpg
+            i=$((i+1))
+          done
+          rm grp_*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stills
+          path: out
