@@ -43,6 +43,8 @@ jobs:
           path: chunks
           pattern: chunk-*
           merge-multiple: true
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Concatenate + mux narration
         run: |
           for i in 0 1 2 3 4 5 6 7 8 9; do echo "file 'chunks/chunk-$i.mp4'" >> list.txt; done
