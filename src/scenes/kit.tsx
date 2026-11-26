@@ -68,19 +68,25 @@ export const KEY_POS: V2 = [1075, 612];
 
 /** big brother writing in the ledger behind the counter */
 export function bWrite(t: number, o: Partial<ActorSpec> = {}, stop = false): ActorSpec {
-  const sx = stop ? 0 : Math.sin(t * 2.1) * 26 + Math.sin(t * 5.3) * 6;
-  const bob = stop ? 0 : Math.sin(t * 9) * 1.5;
+  // handwriting: the pen travels along a line, flicks back to the next line, with small up/down strokes
+  const cyc = (t * 0.34) % 1;
+  const along = cyc < 0.86 ? cyc / 0.86 : 1 - (cyc - 0.86) / 0.14;
+  const lineNo = Math.floor(t * 0.34) % 4;
+  const sx = stop ? 0 : 1355 + along * 78 + Math.sin(t * 11) * 3.2 - 1380;
+  const bob = stop ? 0 : Math.sin(t * 15.5) * 2.2 + Math.max(0, Math.sin(t * 5.3)) * -3 + lineNo * 3;
+  const prog = stop ? 0.5 : along;
   return {
     id: 'B',
     x: 1480,
     flip: true,
     expr: 'stern',
-    lean: 13,
-    tilt: 6,
+    lean: 13 + prog * 1.4,
+    tilt: 6 + (stop ? 0 : Math.sin(t * 0.9) * 1.2),
     lookY: 0.85,
-    look: -0.4,
-    hf: [1380 + sx, COUNTER_Y - 4 + bob],
-    hr: [1520, COUNTER_Y - 2],
+    look: -0.4 - prog * 0.12,
+    hf: [1380 + sx, COUNTER_Y - 10 + bob],
+    hr: [1520, COUNTER_Y - 12],
+    pen: !stop,
     ...o,
   };
 }

@@ -71,13 +71,13 @@ export const s23 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       { id: 'C', x: 1230, expr: 'thinking', look: 0.8, lookY: 0.6, hf: [1360, 598], hr: null, lean: 8, z: 'back' },
-      { id: 'B', x: 1450, flip: true, expr: 'soft', look: -0.1, lookY: 0.9, lean: 10, hf: bPen, hr: [1520, COUNTER_Y - 2], z: 'back' },
+      { id: 'B', x: 1450, flip: true, expr: 'soft', look: -0.1, lookY: 0.9, lean: 10, hf: bPen, hr: [1520, COUNTER_Y - 2], z: 'back', pen: true },
       { id: 'M', x: 1670, flip: true, expr: 'soft', look: -0.7, lookY: 0.7, lean: 7, hf: [1530, 604], hr: null, z: 'back' },
     ],
     props: (
       <>
         <Ledger x={1445} y={COUNTER_Y} s={1.15} write={u} lines={7} />
-        <Pen x={bPen[0] - 6} y={bPen[1] + 4} rot={-38} />
+        
       </>
     ),
   };

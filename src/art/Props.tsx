@@ -150,8 +150,8 @@ export const Plate: React.FC<{ x: number; y: number; rot?: number; s?: number }>
 
 export const Lamp: React.FC<{ x: number; y: number; s?: number; glow?: number }> = ({ x, y, s = 1, glow = 1 }) => (
   <g transform={`translate(${x} ${y}) scale(${s})`}>
-    <circle cx={0} cy={-120} r={260} fill="#ffcf8a" opacity={0.09 * glow} />
-    <circle cx={0} cy={-120} r={120} fill="#ffcf8a" opacity={0.12 * glow} />
+    <circle cx={0} cy={-120} r={300} fill="url(#glowW)" opacity={0.5 * glow} />
+    <circle cx={0} cy={-120} r={130} fill="url(#glowW)" opacity={0.6 * glow} />
     <path d="M -40 0 L 40 0 L 30 -14 L -30 -14 Z" fill="#5b4631" stroke={OUT} strokeWidth={3.5} />
     <rect x={-6} y={-96} width={12} height={84} fill="#5b4631" stroke={OUT} strokeWidth={3} />
     <path d="M -52 -92 L 52 -92 L 34 -150 L -34 -150 Z" fill="#e8c27a" stroke={OUT} strokeWidth={4} />

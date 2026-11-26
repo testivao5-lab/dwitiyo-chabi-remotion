@@ -3,22 +3,61 @@ import { AbsoluteFill, Audio, Sequence, interpolate, staticFile, useCurrentFrame
 import { Person, ActorSpec } from './art/Person';
 import { PAL } from './art/palette';
 import { HomeRoom, MahinRoom, Shop, ShopCounter, Street, DiningTable } from './art/Envs';
-import { FPS, HEIGHT, WIDTH, SCENE_COUNT, sceneDur, sceneEnd, sceneStart, mouth, isTalking, DURATION_FRAMES } from './lib/story';
-import { SceneOut, makeCtx } from './scenes/kit';
+import { FPS, HEIGHT, WIDTH, SCENE_COUNT, sceneDur, sceneEnd, sceneStart, isTalking, DURATION_FRAMES } from './lib/story';
+import { visemeAt, loudness } from './lib/lipsync';
+import { clamp, rng } from './lib/anim';
+import { SceneOut, makeCtx, COUNTER_Y } from './scenes/kit';
 import { SCENES } from './scenes';
 
 const PRE = 10; // dissolve frames before each scene boundary
 
-const Actor: React.FC<{ a: ActorSpec; t: number; g: number }> = ({ a, t, g }) => {
-  const m = a.mouth ?? mouth(a.id, g);
+const Actor: React.FC<{ a: ActorSpec; t: number; g: number; part?: ActorSpec['part'] }> = ({ a, t, g, part }) => {
   const talking = isTalking(a.id, g);
+  const vis = a.mouth !== undefined ? undefined : visemeAt(a.id, g);
+  const gest = talking ? loudness(g, 0.35) : 0;
+  const emph = talking ? clamp((loudness(g, 0.06) - loudness(g, 0.8)) * 2.4, 0, 1) : 0;
   const spec: ActorSpec = {
     ...a,
-    mouth: m,
-    tilt: (a.tilt ?? 0) + (talking ? Math.sin(g * 6.3) * 1.4 : 0),
-    lean: (a.lean ?? 0) + (talking ? Math.sin(g * 3.9) * 0.9 : 0),
+    vis,
+    gest,
+    emph,
+    part,
+    // natural speaking motion: head nods on stressed syllables, body rocks gently
+    tilt: (a.tilt ?? 0) + (talking ? Math.sin(g * 4.1 + a.id.length) * 1.1 * gest + emph * 1.8 : 0),
+    lean: (a.lean ?? 0) + (talking ? Math.sin(g * 2.3) * 0.7 * gest + emph * 0.9 : 0),
   };
   return <Person a={spec} t={t} />;
+};
+
+const Atmosphere: React.FC<{ t: number; warm: boolean; id: number }> = ({ t, warm, id }) => {
+  const r = rng(300 + id);
+  const motes = Array.from({ length: 22 }).map((_, i) => ({ x: r() * WIDTH, y: r() * HEIGHT, s: 1 + r() * 2.6, sp: 4 + r() * 8, ph: r() * 10 }));
+  return (
+    <g>
+      <defs>
+        <radialGradient id={`bloom${id}`} cx="22%" cy="14%" r="70%">
+          <stop offset="0" stopColor={warm ? '#ffd9a0' : '#e6f2ff'} stopOpacity={0.2} />
+          <stop offset="1" stopColor="#fff" stopOpacity={0} />
+        </radialGradient>
+        <linearGradient id={`fall${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0.7" stopColor="#000" stopOpacity={0} />
+          <stop offset="1" stopColor="#000" stopOpacity={0.28} />
+        </linearGradient>
+      </defs>
+      <rect width={WIDTH} height={HEIGHT} fill={`url(#bloom${id})`} />
+      <rect width={WIDTH} height={HEIGHT} fill={`url(#fall${id})`} />
+      {motes.map((m, i) => (
+        <circle
+          key={i}
+          cx={(m.x + t * m.sp * 3 + Math.sin(t * 0.4 + m.ph) * 24) % WIDTH}
+          cy={(m.y - t * m.sp + HEIGHT * 4) % HEIGHT}
+          r={m.s}
+          fill="#fff6dc"
+          opacity={0.1 + 0.1 * Math.sin(t * 0.8 + m.ph)}
+        />
+      ))}
+    </g>
+  );
 };
 
 const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
@@ -28,34 +67,68 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
   const g = Math.max(gFrame / FPS, s0);
   const c = makeCtx(i, sceneDur(i), g);
   const out: SceneOut = SCENES[i](c);
-  const [cx, cy, z] = out.cam;
+  const [cx0, cy0, z] = out.cam;
   const pal = out.bg === 'home' && !out.pal ? PAL.home : out.pal;
   const tg = gFrame / FPS;
+  // handheld camera: very small breathing drift (keeps the frame alive without looking shaky)
+  const cx = cx0 + Math.sin(tg * 0.9 + i) * 1.6 + Math.sin(tg * 2.3) * 0.5;
+  const cy = cy0 + Math.sin(tg * 0.7 + 2 + i) * 1.4;
+  const roll = Math.sin(tg * 0.5 + i) * 0.12;
   const bgProps = out.bgProps ?? {};
+
+  // actors sitting / standing behind a counter or table: their arms are drawn AFTER props so that
+  // hands rest ON the ledger/counter instead of disappearing underneath it.
+  const behindCounter = out.bg === 'shop' && out.counter !== false;
+  const atTable = out.bg === 'home' && out.table !== false;
+  const clipY = behindCounter ? COUNTER_Y + 5 : 672;
+  const armsOver = (a: ActorSpec) =>
+    a.z !== 'front' &&
+    a.walk == null &&
+    ((behindCounter && a.x > 1000) || (atTable && a.x > 560 && a.x < 1540)) &&
+    !!((a.hf && a.hf[1] > 500) || (a.hr && a.hr[1] > 500));
   const back = out.actors.filter((a) => a.z !== 'front');
   const front = out.actors.filter((a) => a.z === 'front');
+  const over = back.filter(armsOver);
   const fade = i === 0 ? 1 : interpolate(local, [0, PRE], [0, 1], { extrapolateRight: 'clamp' });
+  const warm = parseInt(pal.tint.slice(1, 3), 16) > parseInt(pal.tint.slice(5, 7), 16);
 
   return (
     <AbsoluteFill style={{ opacity: fade }}>
       <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
-        <g transform={`translate(960 540) scale(${z}) translate(${-cx} ${-cy})`}>
-          {out.bg === 'shop' && <Shop pal={pal} t={tg} {...bgProps} />}
-          {out.bg === 'home' && <HomeRoom pal={pal} t={tg} />}
-          {out.bg === 'room' && <MahinRoom pal={pal} t={tg} />}
-          {out.bg === 'street' && <Street pal={pal} t={tg} {...bgProps} />}
+        <defs>
+          <filter id={`dof${i}`} x="-5%" y="-5%" width="110%" height="110%">
+            <feGaussianBlur stdDeviation={1.5} />
+          </filter>
+          <clipPath id={`armclip${i}`}>
+            <rect x={-600} y={-600} width={3400} height={clipY + 600} />
+          </clipPath>
+        </defs>
+        <g transform={`translate(960 540) rotate(${roll}) scale(${z}) translate(${-cx} ${-cy})`}>
+          <g filter={`url(#dof${i})`}>
+            {out.bg === 'shop' && <Shop pal={pal} t={tg} {...bgProps} />}
+            {out.bg === 'home' && <HomeRoom pal={pal} t={tg} />}
+            {out.bg === 'room' && <MahinRoom pal={pal} t={tg} />}
+            {out.bg === 'street' && <Street pal={pal} t={tg} {...bgProps} />}
+          </g>
           {back.map((a, k) => (
-            <Actor key={`b${k}${a.id}`} a={a} t={tg} g={g} />
+            <Actor key={`b${k}${a.id}`} a={a} t={tg} g={g} part={armsOver(a) ? 'body' : 'all'} />
           ))}
-          {out.bg === 'shop' && out.counter !== false && <ShopCounter pal={pal} />}
+          {out.bg === 'shop' && out.counter !== false && <ShopCounter pal={pal} t={tg} />}
           {out.bg === 'home' && out.table !== false && <DiningTable pal={pal} />}
           {out.props}
+          {over.length > 0 && (
+            <g clipPath={`url(#armclip${i})`}>
+              {over.map((a, k) => (
+                <Actor key={`o${k}${a.id}`} a={a} t={tg} g={g} part="arms" />
+              ))}
+            </g>
+          )}
           {front.map((a, k) => (
             <Actor key={`f${k}${a.id}`} a={a} t={tg} g={g} />
           ))}
           {out.front}
         </g>
-        {/* colour grade: mood tint + vignette */}
+        {/* colour grade: mood tint + vignette + atmosphere */}
         <defs>
           <radialGradient id={`vg${i}`} cx="50%" cy="48%" r="75%">
             <stop offset="0.55" stopColor="#000" stopOpacity={0} />
@@ -63,6 +136,7 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
           </radialGradient>
         </defs>
         <rect width={WIDTH} height={HEIGHT} fill={pal.tint} opacity={pal.tintOp} />
+        <Atmosphere t={tg} warm={warm} id={i} />
         <rect width={WIDTH} height={HEIGHT} fill={`url(#vg${i})`} />
         {out.overlay}
       </svg>
@@ -73,7 +147,7 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
 const Grain: React.FC = () => {
   const frame = useCurrentFrame();
   return (
-    <svg width={WIDTH} height={HEIGHT} style={{ position: 'absolute', inset: 0, mixBlendMode: 'soft-light', opacity: 0.22, pointerEvents: 'none' }}>
+    <svg width={WIDTH} height={HEIGHT} style={{ position: 'absolute', inset: 0, mixBlendMode: 'soft-light', opacity: 0.2, pointerEvents: 'none' }}>
       <filter id="grain" x="0" y="0" width="100%" height="100%">
         <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="1" seed={frame % 4} stitchTiles="stitch" />
         <feColorMatrix type="saturate" values="0" />

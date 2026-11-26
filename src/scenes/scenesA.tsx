@@ -5,8 +5,7 @@ import { Key, Ledger, OrderPaper, Pen, Sandals, Motorcycle, Cash, Sack, Lamp } f
 import { bounceOut, clamp, kf, kf2, lerp, sway, V2, easeOut } from '../lib/anim';
 import { AmarWord, COUNTER_Y, Ctx, KEY_POS, SceneOut, bWrite, camSeq, walkTo } from './kit';
 
-const pen = (a: ActorSpec) =>
-  a.hf ? <Pen x={a.hf[0] - 6} y={a.hf[1] + 4} rot={-38} /> : null;
+const pen = (_a: ActorSpec): React.ReactNode => null; // the pen is now held in the hand itself (ActorSpec.pen)
 
 const gest = (x: number, dir: 1 | -1, t: number, hgt = 540): V2 => [
   x + dir * 118 + sway(t, 8, 1.3), hgt + sway(t, 14, 0.9),
