@@ -683,8 +683,8 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
   const stride = 56;
   const phF = Math.sin(p);
   const phR = -Math.sin(p);
-  const lf: V2 = walking ? [stride * phF, -40 * Math.max(0, Math.cos(p))] : [26, 0];
-  const rf: V2 = walking ? [-stride * phF * 1 + 0, -40 * Math.max(0, -Math.cos(p))] : [-26, 0];
+  const lf: V2 = walking ? [18 + stride * phF * 0.9, -34 * Math.max(0, Math.cos(p))] : [26, 0];
+  const rf: V2 = walking ? [-18 - stride * phF * 0.9, -34 * Math.max(0, -Math.cos(p))] : [-26, 0];
   const bob = walking ? -7 * Math.abs(Math.sin(p)) : breath * 0.15;
   const footRot = (ph: number, c: number) => (walking ? (c > 0 ? -9 * c : 16 * Math.max(0, -ph)) : 0);
   const dirF: 1 | -1 = 1;
