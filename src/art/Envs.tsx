@@ -787,23 +787,13 @@ export const Street: React.FC<{ pal: Pal; t: number; sid: string; garland?: bool
         const fl = Math.sin(t * 9 + k * 2) * 7;
         return <path key={k} d={`M ${bx - 14} ${by + fl} Q ${bx - 6} ${by - 4} ${bx} ${by} Q ${bx + 6} ${by - 4} ${bx + 14} ${by + fl}`} stroke="#2a2a2a" strokeWidth={2.4} fill="none" opacity={0.6} />;
       })}
-      {/* cloth banner strung across the bazaar */}
+      {/* cloth banner strung across the bazaar — hung ABOVE the shop fronts (wall tops are at y=300)
+          and high enough to clear s15's low pan (visible band starts at y≈153) */}
       <g transform={`translate(0 ${Math.sin(t * 1.1) * 4})`}>
-        <path d="M 640 300 Q 1100 372 1560 306" stroke="#3a3128" strokeWidth={3} fill="none" />
-        <path d={`M 700 316 Q 1100 380 ${1500 + flutter * 3} 320 L ${1500 + flutter * 3} 384 Q 1100 444 700 380 Z`} fill="#2e5a8a" stroke={OUT} strokeWidth={3} opacity={0.95} />
-        <text x={1100} y={378} fontSize={40} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={800} fill="#ffe9b0" textAnchor="middle" transform={`rotate(1.5 1100 378)`}>সব দোকান খোলা • প্রতিদিন</text>
+        <path d="M 640 150 Q 1100 214 1560 156" stroke="#3a3128" strokeWidth={3} fill="none" />
+        <path d={`M 700 168 Q 1100 232 ${1500 + flutter * 3} 174 L ${1500 + flutter * 3} 240 Q 1100 304 700 244 Z`} fill="#2e5a8a" stroke={OUT} strokeWidth={3} opacity={0.95} />
+        <text x={1100} y={230} fontSize={40} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={800} fill="#ffe9b0" textAnchor="middle" transform={`rotate(1.5 1100 230)`}>সব দোকান খোলা • প্রতিদিন</text>
       </g>
-      {/* neighbouring shop signboards */}
-      {[
-        { x: 1420, w: 240, t: 'চা হাউজ', c: '#8a3a2f' },
-        { x: 1720, w: 260, t: 'টেইলার্স', c: '#2e5a8a' },
-      ].map((sg) => (
-        <g key={sg.x}>
-          <rect x={sg.x} y={566} width={sg.w} height={54} fill={sg.c} stroke={OUT} strokeWidth={3.5} />
-          <rect x={sg.x} y={566} width={sg.w} height={8} fill="#000" opacity={0.25} />
-          <text x={sg.x + sg.w / 2} y={604} fontSize={30} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={800} fill="#f5eed6" textAnchor="middle">{sg.t}</text>
-        </g>
-      ))}
       {/* road */}
       <rect x={-200} y={790} width={2320} height={520} fill={`url(#road-${sid})`} filter={`url(#tex-floor-${sid})`} />
       <rect x={-200} y={774} width={2320} height={30} fill={mixHex(pal.floor, '#7a6a55', 0.5)} />
@@ -925,6 +915,17 @@ export const Street: React.FC<{ pal: Pal; t: number; sid: string; garland?: bool
           ))}
         </g>
       )}
+      {/* neighbouring shop signboards — drawn after the stalls so they sit ON the walls */}
+      {[
+        { x: 90, y: 512, w: 250, t: 'চা হাউজ', c: '#8a3a2f' },
+        { x: 1575, y: 512, w: 270, t: 'টেইলার্স', c: '#2e5a8a' },
+      ].map((sg) => (
+        <g key={sg.x}>
+          <rect x={sg.x} y={sg.y} width={sg.w} height={48} fill={sg.c} stroke={OUT} strokeWidth={3.5} />
+          <rect x={sg.x} y={sg.y} width={sg.w} height={7} fill="#000" opacity={0.25} />
+          <text x={sg.x + sg.w / 2} y={sg.y + 36} fontSize={28} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={800} fill="#f5eed6" textAnchor="middle">{sg.t}</text>
+        </g>
+      ))}
       <ellipse cx={970} cy={806} rx={560} ry={16} fill="#000" opacity={0.28} filter={`url(#soft6-${sid})`} />
       {Array.from({ length: 14 }).map((_, i) => (
         <circle key={i} cx={((i * 211 + t * 12) % 2100) - 80} cy={200 + ((i * 97) % 500) + sway(t, 12, 5, i)} r={2.2} fill="#fff" opacity={0.3} />
