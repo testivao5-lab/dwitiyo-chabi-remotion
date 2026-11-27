@@ -245,7 +245,7 @@ export const s29 = (c: Ctx): SceneOut => {
   // the key stays in Mahin's lowered hand (nothing floats in the open doorway)
   const locked = open < 0.02;
   const lower = clamp((t - tOpen) / 1.0);
-  const hand: V2 = locked ? [1190, 712] : [lerp(1190, 1150, easeInOut(lower)), lerp(712, 770, easeInOut(lower))];
+  const hand: V2 = locked ? [1190, 712] : [lerp(1190, 1196, easeInOut(lower)), lerp(712, 772, easeInOut(lower))];
   return {
     bg: 'street',
     pal: PAL.ending,
@@ -257,11 +257,11 @@ export const s29 = (c: Ctx): SceneOut => {
       { d: 99, a: [1060, 535, 1.65], b: [960, 520, 1.0] },
     ]),
     actors: [
-      { id: 'B', x: 960, expr: t < tOpen ? 'soft' : 'smile', look: 0.9, z: 'front', tilt: -2 },
-      { id: 'M', x: 1130, expr: 'neutral', look: 0.9, lookY: 0.2, hf: hand, hr: null, z: 'front' },
+      { id: 'B', x: 925, expr: t < tOpen ? 'soft' : 'smile', look: 0.9, z: 'front', tilt: -2 },
+      { id: 'M', x: 1160, expr: 'neutral', look: 0.9, lookY: 0.2, hf: hand, hr: null, z: 'front' },
     ],
     props: locked ? <Key x={1196} y={722} rot={turn * 90} s={0.55} /> : undefined,
     // once the lock is gone the key hangs from the pinched fingers and is drawn IN FRONT of the hand / leg (never hidden)
-    front: locked ? undefined : <Key x={hand[0] + 3} y={hand[1] + 30} rot={84} s={0.5} />,
+    front: locked ? undefined : <Key x={hand[0] + 6} y={hand[1] + 26} rot={80} s={0.78} />,
   };
 };
