@@ -95,7 +95,7 @@ export const Thumbnail: React.FC = () => {
             <rect x={1554} y={954} width={306} height={34} rx={12} fill="#fff" opacity={0.14} />
             <text x={1707} y={1014} fontSize={50} fontFamily="'Noto Sans Bengali', sans-serif"
               fontWeight={800} fill="#fff" textAnchor="middle" stroke="#140c08"
-              strokeWidth={5} paintOrder="stroke">দ্বিতীয় ছবি</text>
+              strokeWidth={5} paintOrder="stroke">দ্বিতীয় চাবি</text>
           </g>
         </svg>
       </AbsoluteFill>
