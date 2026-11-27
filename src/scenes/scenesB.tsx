@@ -215,7 +215,8 @@ export const s17 = (c: Ctx): SceneOut => {
         id: 'B', x: 1400, flip: true, expr: calling ? 'angry' : 'worried', look: calling ? -0.6 : search, lookY: 0.1,
         hf: calling ? null : [1250 + sway(t, 20, 1.2), 540 + sway(t, 12, 0.9)], hr: calling ? [1462, 372] : [1500, COUNTER_Y - 6], tilt: calling ? 6 : 0,
       },
-      { id: 'C', x: cw.x, walk: cw.walk, flip: t > tCustGo + 1.0, expr: t < tCustGo ? 'neutral' : 'sad', look: t > tCustGo + 1 ? -1 : 0.9, z: 'front', hf: null, op: t < tCust - 0.2 ? 0 : 1 },
+      // soft fade-in: the customer appears at the counter the moment his line starts (a hard 0→1 pop reads as a glitch)
+      { id: 'C', x: cw.x, walk: cw.walk, flip: t > tCustGo + 1.0, expr: t < tCustGo ? 'neutral' : 'sad', look: t > tCustGo + 1 ? -1 : 0.9, z: 'front', hf: null, op: t < tCust - 0.2 ? 0 : clamp((t - tCust + 0.2) / 0.5) },
       ...(t > tCustGo
         ? [{ id: 'O' as const, x: ow.x, walk: ow.walk, flip: false, expr: 'neutral' as const, look: 0.9, z: 'front' as const, hf: t > tCustGo + 3.8 ? ([930, 540] as V2) : null }]
         : []),
