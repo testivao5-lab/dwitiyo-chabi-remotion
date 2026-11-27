@@ -143,6 +143,14 @@ export const Plate: React.FC<{ x: number; y: number; rot?: number; s?: number }>
 
 export const Lamp: React.FC<{ x: number; y: number; s?: number; glow?: number }> = ({ x, y, s = 1, glow = 1 }) => (
   <g transform={`translate(${x} ${y}) scale(${s})`}>
+    {/* the glow gradient is defined here (scene environments define `glowW-${sid}`, this one is global) */}
+    <defs>
+      <radialGradient id="glowW" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stopColor="#fff0c0" stopOpacity={0.75} />
+        <stop offset="0.4" stopColor="#ffd98a" stopOpacity={0.25} />
+        <stop offset="1" stopColor="#ffd98a" stopOpacity={0} />
+      </radialGradient>
+    </defs>
     <circle cx={0} cy={-120} r={300} fill="url(#glowW)" opacity={0.5 * glow} />
     <circle cx={0} cy={-120} r={130} fill="url(#glowW)" opacity={0.6 * glow} />
     <path d="M -40 0 L 40 0 L 30 -14 L -30 -14 Z" fill="#5b4631" stroke={OUT} strokeWidth={3.5} />

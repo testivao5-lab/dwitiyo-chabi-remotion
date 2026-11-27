@@ -379,7 +379,8 @@ export const s10 = (c: Ctx): SceneOut => {
       : { id: 'B', x: 1480, flip: true, expr: t > tKnow ? 'neutral' : 'smile', look: -0.9, hf: t > tCust + 3.4 && t < tKnow + 1.5 ? [1250, 580] : [1395, COUNTER_Y - 6], hr: [1520, COUNTER_Y - 6] },
     { id: 'M', x: 760, expr: t < tAsk ? 'neutral' : t < tFold ? 'sad' : 'neutral', look: t < tCust ? 0.3 : 0.8, hf: t > tFold ? [790 + 90, 560 + 20 * fold] : null, z: 'front', lookY: t > tFold ? 0.7 : 0 },
   ];
-  if (customerHere) actors.push({ id: 'C', x: cw.x, walk: cw.walk, flip: t < tCust + 3.3, expr: 'smile', look: 0.9, z: 'front', hf: null });
+  // the customer walks IN from the left (260 → 1160): he must face right while walking, not moonwalk backwards
+  if (customerHere) actors.push({ id: 'C', x: cw.x, walk: cw.walk, flip: false, expr: 'smile', look: 0.9, z: 'front', hf: null });
   return {
     bg: 'shop',
     pal: PAL.tight,

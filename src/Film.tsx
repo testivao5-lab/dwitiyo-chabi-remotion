@@ -34,8 +34,10 @@ const Atmosphere: React.FC<{ t: number; warm: boolean; id: number }> = ({ t, war
       {motes.map((m, i) => (
         <circle
           key={i}
-          cx={(m.x + t * m.sp * 3 + Math.sin(t * 0.4 + m.ph) * 24) % WIDTH}
-          cy={(m.y - t * m.sp + HEIGHT * 4) % HEIGHT}
+          // wrap with a positive modulo: after a few minutes `t * sp` exceeds the offset and plain `%`
+          // would push motes to negative coordinates (invisible / stuck outside the frame)
+          cx={(((m.x + t * m.sp * 3 + Math.sin(t * 0.4 + m.ph) * 24) % WIDTH) + WIDTH) % WIDTH}
+          cy={(((m.y - t * m.sp) % HEIGHT) + HEIGHT) % HEIGHT}
           r={m.s}
           fill="#fff6dc"
           opacity={0.1 + 0.1 * Math.sin(t * 0.8 + m.ph)}
