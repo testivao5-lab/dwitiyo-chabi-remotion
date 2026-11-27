@@ -8,6 +8,7 @@ import { FPS, HEIGHT, WIDTH, SCENE_COUNT, sceneDur, sceneEnd, sceneStart, DURATI
 import { clamp, rng, V2 } from './lib/anim';
 import { SceneOut, makeCtx, headroom, COUNTER_Y } from './scenes/kit';
 import { SCENES } from './scenes';
+import { smoothEmotion } from './lib/emotion';
 import { Halation, LightLayer, RimDefs, ShadeLayer, Texture, TextureDefs, rigFor } from './art/Lighting';
 
 const PRE = 10; // dissolve frames before each scene boundary
@@ -21,7 +22,7 @@ const Atmosphere: React.FC<{ t: number; warm: boolean; id: number }> = ({ t, war
     <g>
       <defs>
         <radialGradient id={`bloom${id}`} cx="22%" cy="14%" r="70%">
-          <stop offset="0" stopColor={warm ? '#ffd9a0' : '#e6f2ff'} stopOpacity={0.2} />
+          <stop offset="0" stopColor={warm ? '#ffd9a0' : '#e6f2ff'} stopOpacity={0.12} />
           <stop offset="1" stopColor="#fff" stopOpacity={0} />
         </radialGradient>
         <linearGradient id={`fall${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -40,7 +41,7 @@ const Atmosphere: React.FC<{ t: number; warm: boolean; id: number }> = ({ t, war
           cy={(((m.y - t * m.sp) % HEIGHT) + HEIGHT) % HEIGHT}
           r={m.s}
           fill="#fff6dc"
-          opacity={0.1 + 0.1 * Math.sin(t * 0.8 + m.ph)}
+          opacity={0.05 + 0.05 * Math.sin(t * 0.8 + m.ph)}
         />
       ))}
     </g>
@@ -56,12 +57,18 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
   const sid = `s${i}`;
   const c = makeCtx(i, sceneDur(i), g);
   const out: SceneOut = SCENES[i](c);
+  // dialogue-driven expressions: the speaker's line emotion takes over from the scene's
+  // authored expr, holds after the line, and cross-fades over 0.5 s (no pops)
+  const actors: ActorSpec[] = out.actors.map((a) => {
+    const sm = smoothEmotion(a.id, g, a.expr ?? 'neutral');
+    return { ...a, expr: sm.expr, expr2: sm.expr2, exprK: sm.exprK };
+  });
   const [cx0, cy0, z0] = out.cam;
   // staging: very slow push-in over each scene (eased) draws the eye to the characters
   const prog = clamp((g - s0) / sceneDur(i));
   const zp = z0 * (1 + 0.028 * prog * prog * (3 - 2 * prog));
   // keep every visible head inside the frame (see headroom in scenes/kit.tsx)
-  const [cxg, cyg, z] = headroom([cx0, cy0, zp], out.actors);
+  const [cxg, cyg, z] = headroom([cx0, cy0, zp], actors);
   const pal = out.bg === 'home' && !out.pal ? PAL.home : out.pal;
   const tg = gFrame / FPS;
   // handheld camera: very small breathing drift (keeps the frame alive without looking shaky)
@@ -90,8 +97,8 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
     const m = maskOf(a);
     return m.front || m.rear;
   };
-  const back = out.actors.filter((a) => a.z !== 'front');
-  const front = out.actors.filter((a) => a.z === 'front');
+  const back = actors.filter((a) => a.z !== 'front');
+  const front = actors.filter((a) => a.z === 'front');
   const over = back.filter(armsOver);
   const fade = i === 0 ? 1 : interpolate(local, [0, PRE], [0, 1], { extrapolateRight: 'clamp' });
   const warm = parseInt(pal.tint.slice(1, 3), 16) > parseInt(pal.tint.slice(5, 7), 16);
@@ -102,13 +109,22 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
         <RimDefs id={String(i)} rig={rig} />
         <defs>
           <filter id={`dof${i}`} x="-5%" y="-5%" width="110%" height="110%">
-            <feGaussianBlur stdDeviation={1.5} />
+            <feGaussianBlur stdDeviation={0.9} />
+          </filter>
+          {/* final look: a touch more contrast + saturation for a crisp, non-hazy image */}
+          <filter id={`grade${i}`} x="-2%" y="-2%" width="104%" height="104%" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="saturate" values="1.12" />
+            <feComponentTransfer>
+              <feFuncR type="linear" slope="1.07" intercept="-0.035" />
+              <feFuncG type="linear" slope="1.07" intercept="-0.035" />
+              <feFuncB type="linear" slope="1.07" intercept="-0.035" />
+            </feComponentTransfer>
           </filter>
           <clipPath id={`armclip${i}`}>
             <rect x={-600} y={-600} width={3400} height={clipY + 600} />
           </clipPath>
         </defs>
-        <g transform={`translate(960 540) rotate(${roll}) scale(${z}) translate(${-cx} ${-cy})`}>
+        <g transform={`translate(960 540) rotate(${roll}) scale(${z}) translate(${-cx} ${-cy})`} filter={`url(#grade${i})`}>
           <g filter={`url(#dof${i})`}>
             {out.bg === 'shop' && <Shop pal={pal} t={tg} sid={sid} {...envProps} />}
             {out.bg === 'home' && <HomeRoom pal={pal} t={tg} sid={sid} chairs={out.table !== false} />}
@@ -170,7 +186,7 @@ const SceneView: React.FC<{ i: number; from: number }> = ({ i, from }) => {
 const Grain: React.FC = () => {
   const frame = useCurrentFrame();
   return (
-    <svg width={WIDTH} height={HEIGHT} style={{ position: 'absolute', inset: 0, mixBlendMode: 'soft-light', opacity: 0.2, pointerEvents: 'none' }}>
+    <svg width={WIDTH} height={HEIGHT} style={{ position: 'absolute', inset: 0, mixBlendMode: 'soft-light', opacity: 0.1, pointerEvents: 'none' }}>
       <filter id="grain" x="0" y="0" width="100%" height="100%">
         <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="1" seed={frame % 4} stitchTiles="stitch" />
         <feColorMatrix type="saturate" values="0" />

@@ -61,9 +61,9 @@ export const s02 = (c: Ctx): SceneOut => {
   const w = walkTo(t, 880, 230, tw, tw + 3.4);
   const leaving = t > tw;
   const m: ActorSpec = {
-    id: 'M', x: w.x, flip: leaving, walk: w.walk, z: 'front',
+    id: 'M', x: w.x, flip: leaving, walk: w.walk, walkBlend: w.blend, z: 'front',
     expr: t > c.T(13, 3) ? 'bitter' : 'sad',
-    look: leaving ? -1 : -0.2 + 0.0, lookY: 0.05,
+    look: leaving ? -1 : 0.65, lookY: 0.05, // face B while speaking; -1 while storming out
     op: w.x < 330 ? clamp((w.x - 240) / 90) : 1,
   };
   return {
@@ -78,7 +78,8 @@ export const s02 = (c: Ctx): SceneOut => {
     actors: [b, m],
     props: (
       <>
-        <Ledger x={1440} y={COUNTER_Y} write={clamp(t / 12)} />
+        {/* ink fills in step with the pen (pen stops at t≈21.7 with line 15) */}
+        <Ledger x={1440} y={COUNTER_Y} write={clamp(t / 21.5)} />
         <Key x={KEY_POS[0]} y={KEY_POS[1]} />
         <Sandals x={470} y={895} s={0.95} />
       </>
@@ -129,7 +130,7 @@ export const s04 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       { id: 'B', x: 700, expr: 'smile', look: 0.8, tilt: nod, z: 'front' },
-      { id: 'Mo', x: 1010, expr: 'soft', look: 0, hf: [1050, 585], hr: [985, 590], z: 'front' },
+      { id: 'Mo', x: 1010, expr: 'soft', look: 0.75 * Math.max(-1, Math.min(1, Math.sin(t * 1.1 + 1.2) * 2.2)), hf: [1050, 585], hr: [985, 590], z: 'front' }, // rests on one son, quick glances across to the other
       { id: 'M', x: 1330, flip: true, expr: 'smile', look: -0.8, tilt: -nod, z: 'front' },
     ],
     props: (
@@ -164,7 +165,7 @@ export const s05 = (c: Ctx): SceneOut => {
     actors = [
       { id: 'M', x: 1480, flip: true, expr: 'smile', look: -0.3, hf: [1340, COUNTER_Y - 6], z: 'back' },
       {
-        id: 'B', x: bW.x, walk: bW.walk, flip: false, expr: 'soft', look: 0.5, z: 'front',
+        id: 'B', x: bW.x, walk: bW.walk, walkBlend: bW.blend, flip: false, expr: 'soft', look: 0.5, z: 'front',
         hf: carrying ? [sackX + 8, sackY - 52] : null, hr: carrying ? [sackX - 36, sackY - 40] : null,
         lean: (carrying ? 8 : 0) + 10 * bend, sit: 45 * bend,
       },
@@ -174,7 +175,7 @@ export const s05 = (c: Ctx): SceneOut => {
     cam = camSeq(t, [{ d: 99, a: [960, 520, 1.15], b: [1060, 520, 1.3] }], t2 - 0.3);
   } else if (phase === 1) {
     actors = [
-      { id: 'B', x: 800, expr: 'sad', lean: 6, tilt: 8, look: 0.3, hf: [832, 375], hr: [775, 600], z: 'front' },
+      { id: 'B', x: 800, expr: 'sad', lean: 6, tilt: 8, look: 0.55, hf: [832, 375], hr: [775, 600], z: 'front' }, // eyes on M
       { id: 'M', x: 1480, flip: true, expr: 'soft', look: -0.5, hf: [1330 + sway(t, 20, 3), COUNTER_Y - 10], z: 'back' },
     ];
     props = <Sack x={1130} y={COUNTER_Y} s={0.5} />;
@@ -182,7 +183,7 @@ export const s05 = (c: Ctx): SceneOut => {
   } else {
     actors = [
       { id: 'M', x: 1480, flip: true, expr: 'thinking', lean: 12, lookY: 0.8, look: -0.4, tilt: 6, hf: [1390 + sway(t, 12, 2.6), COUNTER_Y - 6], hr: [1530, COUNTER_Y - 4], z: 'back' },
-      { id: 'B', x: 1150, flip: true, expr: 'soft', look: -0.0, tilt: -4, hf: null, z: 'back' },
+      { id: 'B', x: 1150, flip: true, expr: 'soft', look: 0.65, tilt: -4, hf: null, z: 'back' }, // watch M working the ledger
     ];
     props = (
       <>
@@ -380,7 +381,7 @@ export const s10 = (c: Ctx): SceneOut => {
     { id: 'M', x: 760, expr: t < tAsk ? 'neutral' : t < tFold ? 'sad' : 'neutral', look: t < tCust ? 0.3 : 0.8, hf: t > tFold ? [790 + 90, 560 + 20 * fold] : null, z: 'front', lookY: t > tFold ? 0.7 : 0 },
   ];
   // the customer walks IN from the left (260 → 1160): he must face right while walking, not moonwalk backwards
-  if (customerHere) actors.push({ id: 'C', x: cw.x, walk: cw.walk, flip: false, expr: 'smile', look: 0.9, z: 'front', hf: null });
+  if (customerHere) actors.push({ id: 'C', x: cw.x, walk: cw.walk, walkBlend: cw.blend, flip: false, expr: 'smile', look: 0.9, z: 'front', hf: null });
   return {
     bg: 'shop',
     pal: PAL.tight,

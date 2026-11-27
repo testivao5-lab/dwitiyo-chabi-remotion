@@ -29,7 +29,7 @@ const EXPR: Record<Expr, EP> = {
   thinking: { ba: 0.35, bY: -2, eye: 0.85, mc: -0.15 },
 };
 
-export type CharId = 'B' | 'M' | 'Mo' | 'O' | 'C';
+export type CharId = 'B' | 'M' | 'Mo' | 'O' | 'C' | 'K'; // K = one-off customer (s17), distinct design so he is never mistaken for the acquaintance C
 
 interface CharDef {
   skin: string;
@@ -78,6 +78,11 @@ export const CHARS: Record<CharId, CharDef> = {
     shirt: '#a2b0be', pants: '#85795f', shoes: '#3a2c24', sleeve: 'rolled',
     build: 1.2, height: 0.98, mustache: true, grey: true, iris: '#35210f', belt: '#3a2c1f',
   },
+  K: {
+    skin: '#9e6b45', skinShade: '#87573a', hair: '#171310', hairStyle: 'short',
+    shirt: '#8a6fae', pants: '#3c3f4a', shoes: '#2e2a33', sleeve: 'long',
+    build: 0.9, height: 1.04, iris: '#2a1a10', belt: '#2f2620',
+  },
 };
 
 export interface ActorSpec {
@@ -96,6 +101,7 @@ export interface ActorSpec {
   hf?: V2 | null; // front-hand world target
   hr?: V2 | null; // rear-hand world target
   walk?: number | null; // walk phase (radians) — null/undefined = standing
+  walkBlend?: number; // 0..1 weight of the walk pose over the idle pose (walkTo eases this in/out)
   sit?: number;
   mouth?: number; // legacy: plain openness override
   vis?: Viseme; // lip-sync viseme
@@ -583,6 +589,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
   const uid = instanceId ?? a.id;
   const lookL = (a.look ?? 0) * flip; // look is authored in screen-space
   const walking = a.walk !== undefined && a.walk !== null;
+  const wb = a.walkBlend ?? (walking ? 1 : 0); // walk-pose weight (0 = standing pose, 1 = full stride)
   const bw = d.build;
   const ws = 58 * bw;
   const ww = 50 * bw;
@@ -613,15 +620,15 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
   const br = breathWave(t, seed); // 0..1 asymmetric breath
   const brLag = breathWave(t - 0.28, seed); // arms / hands follow the chest a moment later
   const breath = (br - 0.5) * 4.4 * amp;
-  const wsh = walking ? 0 : weightShift(t, seed); // -1..1
+  const wsh = weightShift(t, seed) * (1 - wb); // -1..1 (fades out as the walk takes over)
   const hipX = wsh * 4.5;
-  const weight = walking ? 0 : hipX * 0.55;
+  const weight = hipX * 0.55; // hipX already fades with (1 - wb)
   const SLACK = 0; // legs stay straight (knees never bow)
   const lean = (a.lean ?? 0) - wsh * 1.3;
   const dTilt = a.dTilt ?? 0;
   const dEmph = a.dEmph ?? 0;
   const anti = clamp(a.anti ?? 0, 0, 1);
-  const handDrag = walking ? 0 : -(weight - weightShift(t - 0.2, seed) * 4.5 * 0.55);
+  const handDrag = -(weight - weightShift(t - 0.2, seed) * 4.5 * 0.55) * (1 - wb);
   const sysc = 1 + emph * 0.009 - anti * 0.006 + (br - 0.5) * 0.004 * amp; // squash & stretch (volume kept)
   const sxsc = 1 / sysc;
   const p = a.walk ?? 0;
@@ -647,10 +654,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
   const talkingGesture = !walking && lift > 0.02;
   let idleF: V2 = [ws + 4 + sway(t, 2.5, 3.1, seed) + handDrag, -238 + sway(t, 2, 2.7, seed) - brLag * 2.6];
   let idleR: V2 = [-(ws + 4) + sway(t, 2.5, 3.3, seed + 1) + handDrag, -238 + sway(t, 2, 2.9, seed + 2) - brLag * 2.6];
-  if (walking) {
-    idleF = [ws + 6 - swing * 52, -258 + Math.abs(Math.cos(p)) * -10];
-    idleR = [-(ws + 6) + swing * 52 * 0.9, -258 + Math.abs(Math.cos(p)) * -10];
-  } else if (talkingGesture) {
+  if (talkingGesture) {
     // gesture built from joint angles so the elbow always stays low and outward
     const arm = (sd: 1 | -1, amt: number, bt: number): V2 => {
       const al = ((20 + 7 * Math.sin(t * 1.3 + seed + sd)) * Math.PI) / 180;
@@ -664,6 +668,13 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
     };
     idleF = arm(1, clamp(lift + emph * 0.25 + anti * 0.15), beat);
     idleR = arm(-1, lift * lift * 0.55, beat2);
+  }
+  if (walking) {
+    // stride swing blended over whatever the arms were doing (idle / gesture)
+    const wf: V2 = [ws + 6 - swing * 52, -258 + Math.abs(Math.cos(p)) * -10];
+    const wr: V2 = [-(ws + 6) + swing * 52 * 0.9, -258 + Math.abs(Math.cos(p)) * -10];
+    idleF = [lerp(idleF[0], wf[0], wb), lerp(idleF[1], wf[1], wb)];
+    idleR = [lerp(idleR[0], wr[0], wb), lerp(idleR[1], wr[1], wb)];
   }
   const jit = (n: number): V2 => [sway(t, 1.6, 2.3, seed + n), sway(t, 1.6, 1.9, seed + n + 4)];
   const jf = jit(1);
@@ -683,21 +694,21 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
   const stride = 56;
   const phF = Math.sin(p);
   const phR = -Math.sin(p);
-  const lf: V2 = walking ? [18 + stride * phF * 0.9, -34 * Math.max(0, Math.cos(p))] : [26, 0];
-  const rf: V2 = walking ? [-18 - stride * phF * 0.9, -34 * Math.max(0, -Math.cos(p))] : [-26, 0];
-  const bob = walking ? -7 * Math.abs(Math.sin(p)) : breath * 0.15;
-  const footRot = (ph: number, c: number) => (walking ? (c > 0 ? -9 * c : 16 * Math.max(0, -ph)) : 0);
+  const lf: V2 = [lerp(26, 18 + stride * phF * 0.9, wb), lerp(0, -34 * Math.max(0, Math.cos(p)), wb)];
+  const rf: V2 = [lerp(-26, -18 - stride * phF * 0.9, wb), lerp(0, -34 * Math.max(0, -Math.cos(p)), wb)];
+  const bob = lerp(breath * 0.15, -7 * Math.abs(Math.sin(p)), wb);
+  const footRot = (ph: number, c: number) => wb * (c > 0 ? -9 * c : 16 * Math.max(0, -ph));
   const dirF: 1 | -1 = 1;
-  const dirR: 1 | -1 = walking ? 1 : -1;
-  const hipSway = walking ? Math.sin(p) * 3 : 0;
+  const dirR: 1 | -1 = wb > 0.35 ? 1 : -1; // mirror flips mid-blend where motion hides it
+  const hipSway = Math.sin(p) * 3 * wb;
   const opacity = a.op ?? 1;
   const torsoPath = `M ${-ws} -486 Q ${-ws - 4} -380 ${-ww} -272 L ${ww} -272 Q ${ws + 4} -380 ${ws} -486 Q ${ws * 0.55} -510 18 -514 L -18 -514 Q ${-ws * 0.55} -510 ${-ws} -486 Z`;
   const cid = `clip-${uid}`;
-  const headTilt = (a.tilt ?? 0) * flip - lean * 0.5 - dTilt * 0.9 + wsh * 0.7 + sway(t, 0.8, 5, seed) + sway(t, 0.35, 2.3, seed + 5) + (walking ? Math.sin(p * 2) * 0.8 : 0);
+  const headTilt = (a.tilt ?? 0) * flip - lean * 0.5 - dTilt * 0.9 + wsh * 0.7 + sway(t, 0.8, 5, seed) + sway(t, 0.35, 2.3, seed + 5) + Math.sin(p * 2) * 0.8 * wb;
   // hair / cap lag behind the head (overlapping action)
   const hairRot = clamp(-dTilt * 2.6 + sway(t, 0.7, 2.6, seed + 3), -7, 7);
   const hairDy = clamp(-dEmph * 9, -4, 4);
-  const headDy = -590 - br * 3.6 * amp + 1.8 + (walking ? Math.cos(p * 2) * 2 : 0) + emph * 4.5 - anti * 3;
+  const headDy = -590 - br * 3.6 * amp + 1.8 + Math.cos(p * 2) * 2 * wb + emph * 4.5 - anti * 3;
 
   const mask = a.armsMask ?? { front: true, rear: true };
   const rearArm = (
@@ -780,7 +791,7 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
   );
 
   const head = (
-    <g transform={`translate(${lookL * 3} ${headDy}) rotate(${headTilt} 0 80)`}>
+    <g transform={`translate(${lookL * 6} ${headDy}) rotate(${headTilt + lookL * 1.2} 0 80)`}>
       <Head d={d} ep={ep} vis={vis} look={lookL} lookY={a.lookY ?? 0} blink={blink} uid={uid} t={t} seed={seed} emph={emph} hairRot={hairRot} hairDy={hairDy} />
     </g>
   );
@@ -788,21 +799,21 @@ export const Person: React.FC<{ a: ActorSpec; t: number; instanceId?: string }> 
   const legs = d.saree ? (
     <g>
       <path
-        d={`M ${-ww} -280 C ${-ww - 8} -150 ${-82 + sway(t, 2, 3, seed)} -60 ${-84 + (walking ? Math.sin(p) * 18 : 0)} -6 L ${84 + (walking ? Math.sin(p) * 18 : 0)} -6 C ${82} -60 ${ww + 8} -150 ${ww} -280 Z`}
+        d={`M ${-ww} -280 C ${-ww - 8} -150 ${-82 + sway(t, 2, 3, seed)} -60 ${-84 + Math.sin(p) * 18 * wb} -6 L ${84 + Math.sin(p) * 18 * wb} -6 C ${82} -60 ${ww + 8} -150 ${ww} -280 Z`}
         fill={d.saree}
         stroke={OUT}
         strokeWidth={3.5}
       />
-      <path d={`M ${-84 + (walking ? Math.sin(p) * 18 : 0)} -6 L ${84 + (walking ? Math.sin(p) * 18 : 0)} -6 L ${82} -30 L ${-82} -30 Z`} fill={d.border} opacity={0.9} />
+      <path d={`M ${-84 + Math.sin(p) * 18 * wb} -6 L ${84 + Math.sin(p) * 18 * wb} -6 L ${82} -30 L ${-82} -30 Z`} fill={d.border} opacity={0.9} />
       <path d="M -30 -270 L -44 -10 M 0 -270 L 0 -12 M 30 -270 L 44 -10 M -15 -270 L -22 -12 M 15 -270 L 22 -12" stroke={shade(d.saree ?? '#000', 0.3)} strokeWidth={3} fill="none" opacity={0.45} />
       <path d={`M ${ww - 8} -280 C ${ww} -150 80 -60 82 -6 L 84 -6 C 86 -60 ${ww + 12} -150 ${ww + 2} -280 Z`} fill="#000" opacity={0.15} />
-      <ellipse cx={-30 + (walking ? Math.sin(p) * 14 : 0)} cy={-4} rx={26} ry={9} fill={d.shoes} />
-      <ellipse cx={34 - (walking ? Math.sin(p) * 14 : 0)} cy={-4} rx={26} ry={9} fill={d.shoes} />
+      <ellipse cx={-30 + Math.sin(p) * 14 * wb} cy={-4} rx={26} ry={9} fill={d.shoes} />
+      <ellipse cx={34 - Math.sin(p) * 14 * wb} cy={-4} rx={26} ry={9} fill={d.shoes} />
     </g>
   ) : (
     <g>
-      <Leg hx0={-22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, wsh) * 0.8)} tx={rf[0]} ty={rf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirR} rot={footRot(phR, -Math.cos(p))} front={false} />
-      <Leg hx0={22 + hipX} hy0={-276 + SLACK + (walking ? 0 : Math.max(0, -wsh) * 0.8)} tx={lf[0]} ty={lf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirF} rot={footRot(phF, Math.cos(p))} front />
+      <Leg hx0={-22 + hipX} hy0={-276 + SLACK + Math.max(0, wsh) * 0.8} tx={rf[0]} ty={rf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirR} rot={footRot(phR, -Math.cos(p))} front={false} />
+      <Leg hx0={22 + hipX} hy0={-276 + SLACK + Math.max(0, -wsh) * 0.8} tx={lf[0]} ty={lf[1] - ANKLE} w={legW} pants={d.pants} shoes={d.shoes} dir={dirF} rot={footRot(phF, Math.cos(p))} front />
       <rect x={-ww + 2 + hipX} y={-300 + SLACK} width={(ww - 2) * 2} height={46} rx={14} fill={d.pants} stroke={OUT} strokeWidth={3.5} />
     </g>
   );

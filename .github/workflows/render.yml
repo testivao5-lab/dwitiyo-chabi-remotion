@@ -60,7 +60,9 @@ jobs:
       - name: Concatenate + mux narration
         run: |
           for i in 0 1 2 3 4 5 6 7 8 9; do echo "file 'chunks/chunk-$i.mp4'" >> list.txt; done
-          ffmpeg -y -f concat -safe 0 -i list.txt -i public/narration.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -movflags +faststart -shortest dwitiyo-chabi.mp4
+          ffmpeg -y -f concat -safe 0 -i list.txt -i public/narration.wav -i public/sfx_mix.wav \
+            -filter_complex "[1:a][2:a]amix=inputs=2:duration=first:normalize=0[a]" \
+            -map 0:v:0 -map "[a]" -c:v copy -c:a aac -b:a 192k -movflags +faststart -shortest dwitiyo-chabi.mp4
           ls -la dwitiyo-chabi.mp4
       - uses: actions/upload-artifact@v4
         with:
@@ -70,7 +72,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="Rendered on GitHub Actions with Remotion (24fps, 1920x1080, narration muxed, commit ${GITHUB_SHA::7})."
+          NOTES="Rendered on GitHub Actions with Remotion (24fps, 1920x1080, narration + subtle SFX muxed, commit ${GITHUB_SHA::7})."
           if gh release view latest >/dev/null 2>&1; then
             gh release upload latest dwitiyo-chabi.mp4 --clobber
             gh release edit latest --title "দ্বিতীয় চাবি — final render" --notes "$NOTES"

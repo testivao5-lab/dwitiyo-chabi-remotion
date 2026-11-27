@@ -4,7 +4,7 @@ import { Film } from './Film';
 import { DURATION_FRAMES, FPS, HEIGHT, WIDTH } from './lib/story';
 import { loadFont } from '@remotion/google-fonts/NotoSansBengali';
 
-loadFont('normal', { weights: ['800'], subsets: ['bengali'] });
+loadFont('normal', { weights: ['400', '700', '800'], subsets: ['bengali'] });
 
 export const RemotionRoot: React.FC = () => (
   <Composition

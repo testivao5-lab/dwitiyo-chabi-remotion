@@ -25,7 +25,7 @@ export const s11 = (c: Ctx): SceneOut => {
     actors: [
       { id: 'B', x: 1320, flip: true, expr: t > tFeel ? 'worried' : 'neutral', look: t > tFeel ? -0.6 + sway(t, 0.5, 2.5) : -0.8, hf: [1250, COUNTER_Y - 6], hr: [1390, COUNTER_Y - 6] },
       { id: 'M', x: 960, flip: true, expr: 'smile', look: -0.8, hf: talk ? paper : [900, 580], hr: talk ? [895, 585] : null, z: 'front' },
-      { id: 'O', x: ow.x, walk: ow.walk, flip: false, expr: 'neutral', look: 0.8, hf: talk ? [paper[0] - 50, paper[1] - 14] : null, z: 'front' },
+      { id: 'O', x: ow.x, walk: ow.walk, walkBlend: ow.blend, flip: false, expr: 'neutral', look: 0.8, hf: talk ? [paper[0] - 50, paper[1] - 14] : null, z: 'front' },
     ],
     props: (
       <>
@@ -59,7 +59,7 @@ export const s12 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       { id: 'B', x: bx, flip: true, expr: t > tB2 ? 'stern' : 'angry', look: -0.9, hf: t > tB1 - 0.3 && t < tO ? [1000, 560 + sway(t, 8, 0.8)] : [bx - 90, COUNTER_Y - 6], hr: [bx + 70, COUNTER_Y - 6] },
-      { id: 'M', x: 960, flip: true, expr: t < tB1 ? 'smile' : t < c.E(85, 0) ? 'neutral' : 'sad', look: t > c.E(85, 0) ? 0 : -0.8, lookY: t > c.E(85, 0) + 1 ? 0.6 : 0, hf: [878, 590], hr: [866, 592], z: 'front' },
+      { id: 'M', x: 960, flip: true, expr: t < tB1 ? 'smile' : t < c.E(85, 0) ? 'neutral' : 'sad', look: t >= tB1 ? 0.7 : -0.8, lookY: t > c.E(85, 0) + 1 ? 0.6 : 0, hf: [878, 590], hr: [866, 592], z: 'front' }, // at O, then at B
       { id: 'O', x: 640, expr: t < tB1 ? 'neutral' : t < tO ? 'surprised' : 'neutral', look: 0.8, z: 'front', hf: t > tO ? [740, 560] : null },
     ],
     props: (
@@ -89,7 +89,7 @@ export const s13 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       { id: 'M', x: 960, flip: true, expr: t > tSay ? 'soft' : 'neutral', look: -0.3, lookY: t < tSay ? 0.8 : 0, hf: [840, 575 + sway(t, 3, 1.4)], hr: [878, 580], z: 'front' },
-      { id: 'O', x: ow.x, walk: ow.walk, flip: t > tGo, expr: 'neutral', look: t > tGo ? -1 : 0.9, z: 'front', op: ow.x < 330 ? clamp((ow.x - 240) / 90) : 1 },
+      { id: 'O', x: ow.x, walk: ow.walk, walkBlend: ow.blend, flip: t > tGo, expr: 'neutral', look: t > tGo ? -1 : 0.9, z: 'front', op: ow.x < 330 ? clamp((ow.x - 240) / 90) : 1 },
       { id: 'B', x: 1320, flip: true, expr: 'stern', look: -0.7, hf: [1250, COUNTER_Y - 6], hr: [1390, COUNTER_Y - 6] },
     ],
     props: (
@@ -126,7 +126,7 @@ export const s14 = (c: Ctx): SceneOut => {
     actors: [
       { id: 'B', x: 1380, flip: true, expr: t > tM1 ? 'stern' : 'angry', look: -0.8, hf: [1290, COUNTER_Y - 6], hr: [1470, COUNTER_Y - 6] },
       {
-        id: 'M', x: w.x, walk: w.walk, flip: t > walkT, z: 'front',
+        id: 'M', x: w.x, walk: w.walk, walkBlend: w.blend, flip: t > walkT, z: 'front',
         expr: t < tM1 ? 'neutral' : t < tM2 ? 'soft' : t < tKey ? 'bitter' : 'neutral',
         look: t > walkT ? -1 : 0.5, lookY: t > tKey - 0.5 && t < tKey + 1.2 ? 0.9 : 0,
         hf: handing ? place : null,
@@ -154,7 +154,7 @@ export const s15 = (c: Ctx): SceneOut => {
       pal: PAL.absence,
       bgProps: { shutter: 0 },
       cam: camSeq(t, [{ d: 99, a: [1450, 540, 1.4], b: [560, 540, 1.35] }], tHome - 0.2),
-      actors: [{ id: 'B', x: w.x, walk: w.walk !== null ? w.walk * 1.35 : null, flip: true, expr: 'angry', look: -0.6, lean: 5, z: 'front', hf: [w.x - 90, 560], hr: [w.x + 80, 520] }],
+      actors: [{ id: 'B', x: w.x, walk: w.walk !== null ? w.walk * 1.35 : null, walkBlend: w.blend, flip: true, expr: 'angry', look: -0.6, lean: 5, z: 'front', hf: [w.x - 90, 560], hr: [w.x + 80, 520] }],
     };
   }
   const tn = t - tHome;
@@ -164,7 +164,7 @@ export const s15 = (c: Ctx): SceneOut => {
     cam: camSeq(tn, [{ d: 99, a: [1050, 520, 1.25], b: [1100, 510, 1.5] }], c.d - tHome),
     actors: [
       { id: 'M', x: 760, expr: tn < 4 ? 'soft' : 'neutral', look: 0.9, hf: tn < 5 ? [850, 600] : [700, 620], z: 'back' },
-      { id: 'B', x: 1300, flip: true, sit: 130, expr: t > c.T(103) ? 'thinking' : 'stern', look: -0.2, lookY: 0.4, hf: [1220, 640], hr: [1380, 640], z: 'back' },
+      { id: 'B', x: 1300, flip: true, sit: 130, expr: t > c.T(103) ? 'thinking' : 'stern', look: -0.55, lookY: 0.35, hf: [1220, 640], hr: [1380, 640], z: 'back' }, // across the table at M
     ],
     props: <Plate x={900} y={642} s={0.8} />,
   };
@@ -187,7 +187,7 @@ export const s16 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       { id: 'B', x: 700, expr: t < tM ? 'stern' : t < tSilent ? 'neutral' : 'sad', look: 0.9, lookY: t > tSilent ? 0.8 : 0, hf: t > tB - 0.5 && t < tM ? [800, 570 + sway(t, 8, 0.8)] : null },
-      { id: 'M', x: 1160, flip: true, expr: t < tM - 0.4 ? 'neutral' : t < tM + 2.6 ? 'bitter' : 'neutral', look: t < tB ? -0.2 : -0.9, hf: [1068, 566], hr: [1050, 588], lookY: 0 },
+      { id: 'M', x: 1160, flip: true, expr: t < tM - 0.4 ? 'neutral' : t < tM + 2.6 ? 'bitter' : 'neutral', look: t < tB ? -0.65 : -0.9, hf: [1068, 566], hr: [1050, 588], lookY: 0 }, // eyes on B, then on the note
     ],
     props: <Book x={1060} y={598} s={0.4} rot={-10} />,
   };
@@ -212,13 +212,13 @@ export const s17 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       {
-        id: 'B', x: 1400, flip: true, expr: calling ? 'angry' : 'worried', look: calling ? -0.6 : search, lookY: 0.1,
+        id: 'B', x: 1400, flip: true, expr: calling ? 'angry' : 'worried', look: calling || t >= tCust ? -0.6 : -0.35 + search, lookY: 0.1, // counter/customer side — never a dead-centre camera stare
         hf: calling ? null : [1250 + sway(t, 20, 1.2), 540 + sway(t, 12, 0.9)], hr: calling ? [1462, 372] : [1500, COUNTER_Y - 6], tilt: calling ? 6 : 0,
       },
       // soft fade-in: the customer appears at the counter the moment his line starts (a hard 0→1 pop reads as a glitch)
-      { id: 'C', x: cw.x, walk: cw.walk, flip: t > tCustGo + 1.0, expr: t < tCustGo ? 'neutral' : 'sad', look: t > tCustGo + 1 ? -1 : 0.9, z: 'front', hf: null, op: t < tCust - 0.2 ? 0 : clamp((t - tCust + 0.2) / 0.5) },
+      { id: 'K', x: cw.x, walk: cw.walk, walkBlend: cw.blend, flip: t > tCustGo + 1.0, expr: t < tCustGo ? 'neutral' : 'sad', look: t > tCustGo + 1 ? -1 : 0.9, z: 'front', hf: null, op: t < tCust - 0.2 ? 0 : clamp((t - tCust + 0.2) / 0.5) }, // one-off phone-reservation customer — NOT the acquaintance C
       ...(t > tCustGo
-        ? [{ id: 'O' as const, x: ow.x, walk: ow.walk, flip: false, expr: 'neutral' as const, look: 0.9, z: 'front' as const, hf: t > tCustGo + 3.8 ? ([930, 540] as V2) : null }]
+        ? [{ id: 'O' as const, x: ow.x, walk: ow.walk, walkBlend: ow.blend, flip: false, expr: 'neutral' as const, look: 0.9, z: 'front' as const, hf: t > tCustGo + 3.8 ? ([930, 540] as V2) : null }]
         : []),
     ],
     props: (
@@ -258,7 +258,7 @@ export const s18 = (c: Ctx): SceneOut => {
         : camSeq(t - tRefl, [{ d: 99, a: [800, 480, 2.0], b: [795, 470, 2.3] }], c.d - tRefl),
     actors: [
       {
-        id: 'B', x: bx, walk: w.walk, flip: true, expr: inCall ? (t > tM ? 'neutral' : 'angry') : t > tRefl ? 'sad' : 'thinking',
+        id: 'B', x: bx, walk: w.walk, walkBlend: w.blend, flip: true, expr: inCall ? (t > tM ? 'neutral' : 'angry') : t > tRefl ? 'sad' : 'thinking',
         // flipped B faces left → his visible ear is on the right (x + 26): far-side (rear) hand holds the phone there
         look: -0.7, lean: 24 * crouch, sit: 65 * crouch, lookY: bend * 0.9,
         hf: !inCall && atShelf && t < tRefl ? [795, 742] : null,
@@ -353,7 +353,8 @@ export const s20 = (c: Ctx): SceneOut => {
     ],
     props: (
       <>
-        <Ledger x={1010} y={662} s={1.35} write={clamp((t - c.T(133)) / 6)} lines={6} />
+        {/* entries already exist — Mahin is searching them, not writing */}
+        <Ledger x={1010} y={662} s={1.35} write={1} lines={6} />
         <Lamp x={1450} y={662} s={1.1} />
         {box(655, 335, u * 3 - 0)}
         {box(905, 335, u * 3 - 1)}

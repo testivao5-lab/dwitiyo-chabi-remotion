@@ -307,6 +307,58 @@ export const Shop: React.FC<{ pal: Pal; t: number; sid: string; stockBox?: boole
           <path d="M 660 755 q 14 -10 28 0 t 28 0 t 28 0 M 660 770 q 20 -8 40 0 t 38 0" stroke="#2b1d17" strokeWidth={2.6} fill="none" strokeLinecap="round" />
         </g>
       )}
+      {/* hanging sachet strips (চিপস / চান packets on a string) — a bazaar-shop staple */}
+      {[620, 1560].map((sx, si) => (
+        <g key={sx} transform={`rotate(${Math.sin(t * 1.2 + si * 2) * 2.4} ${sx} 118)`}>
+          <line x1={sx} y1={118} x2={sx} y2={368} stroke="#3a3128" strokeWidth={2.5} />
+          {Array.from({ length: 7 }).map((_, i) => {
+            const y = 140 + i * 32;
+            const cols = ['#d9a53c', '#c9533c', '#6a9a55', '#4a7ab0', '#d97b3c'];
+            const c = cols[(i + si) % cols.length];
+            return (
+              <g key={i} transform={`translate(${sx + (i % 2 ? 4 : -4)} ${y}) rotate(${Math.sin(t * 1.7 + i + si) * 4})`}>
+                <rect x={-15} y={0} width={30} height={38} rx={3} fill={c} stroke={OUT} strokeWidth={2} />
+                <rect x={-15} y={0} width={30} height={7} fill="#000" opacity={0.25} />
+                <rect x={-9} y={13} width={18} height={12} rx={2} fill="#efe6cf" opacity={0.85} />
+                <path d="M -6 19 h 12" stroke="#2b1d17" strokeWidth={2} />
+              </g>
+            );
+          })}
+        </g>
+      ))}
+      {/* hanging balance scale (বাজনা) */}
+      <g transform={`translate(1700 118) rotate(${Math.sin(t * 0.9) * 1.6})`}>
+        <line x1={0} y1={0} x2={0} y2={70} stroke="#4a4038" strokeWidth={3} />
+        <rect x={-70} y={70} width={140} height={7} rx={3} fill="#8a7a45" stroke={OUT} strokeWidth={2} />
+        <circle cx={0} cy={70} r={7} fill="#a89350" stroke={OUT} strokeWidth={2} />
+        {[-58, 58].map((px) => (
+          <g key={px}>
+            <line x1={px} y1={74} x2={px} y2={120} stroke="#6a5f35" strokeWidth={2} />
+            <path d={`M ${px - 30} 120 Q ${px} 140 ${px + 30} 120 Z`} fill="#cfc29a" stroke={OUT} strokeWidth={2.5} />
+          </g>
+        ))}
+      </g>
+      {/* দাম তালিকা — hand-painted price list on the right wall */}
+      <g transform="translate(1918 190)">
+        <rect x={4} y={6} width={190} height={250} fill="#000" opacity={0.25} filter={`url(#soft6-${sid})`} />
+        <rect width={190} height={250} fill="#efe6d0" stroke={OUT} strokeWidth={3.5} />
+        <rect width={190} height={46} fill="#37474f" stroke={OUT} strokeWidth={3.5} />
+        <text x={95} y={33} fontSize={25} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={700} fill="#ffe9b0" textAnchor="middle">দাম তালিকা</text>
+        {[
+          ['চাল', '৳ ৬৫'],
+          ['চিনি', '৳ ১৩০'],
+          ['ডাল', '৳ ৯০'],
+          ['তেল', '৳ ১৭৫'],
+          ['চা', '৳ ১২০'],
+          ['সাবান', '৳ ৩৫'],
+        ].map(([nm, pr], i) => (
+          <g key={nm}>
+            <text x={14} y={80 + i * 30} fontSize={18} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={700} fill="#2b1d17">{nm}</text>
+            <text x={176} y={80 + i * 30} fontSize={17} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={700} fill="#8a2f2f" textAnchor="end">{pr}</text>
+            <line x1={14} y1={87 + i * 30} x2={176} y2={87 + i * 30} stroke="#7a6a55" strokeWidth={1} opacity={0.5} />
+          </g>
+        ))}
+      </g>
       <Fan x={1650} y={118} t={t} />
       {/* hanging bulb (swings, flickers) */}
       {bulb && (
@@ -485,6 +537,25 @@ export const HomeRoom: React.FC<{ pal: Pal; t: number; sid: string; chairs?: boo
           <path d="M 14 77 Q 35 46 56 77 Z" fill="#6a5a48" opacity={0.7} />
         </g>
       ))}
+      {/* steel almirah (আলমারি) — a fixture of every Bangladeshi home */}
+      <g transform="translate(90 388)">
+        <rect x={6} y={8} width={310} height={420} fill="#000" opacity={0.3} filter={`url(#soft6-${sid})`} />
+        <rect width={310} height={420} rx={6} fill="#9aa4a8" stroke={OUT} strokeWidth={4} />
+        <rect x={10} y={12} width={135} height={388} rx={4} fill="#aeb8bc" stroke={OUT} strokeWidth={3} />
+        <rect x={165} y={12} width={135} height={388} rx={4} fill="#a4aeb2" stroke={OUT} strokeWidth={3} />
+        <rect x={22} y={30} width={111} height={150} fill="#dfe8ea" opacity={0.8} stroke={OUT} strokeWidth={2.5} />
+        <rect x={177} y={30} width={111} height={150} fill="#dfe8ea" opacity={0.8} stroke={OUT} strokeWidth={2.5} />
+        <path d="M 30 44 L 124 166 M 177 44 L 282 166" stroke="#fff" strokeWidth={7} opacity={0.35} />
+        <rect x={22} y={210} width={111} height={26} fill="#c9533c" opacity={0.85} rx={3} stroke={OUT} strokeWidth={2} />
+        <rect x={177} y={210} width={111} height={26} fill="#c9533c" opacity={0.85} rx={3} stroke={OUT} strokeWidth={2} />
+        <path d="M 22 300 q 55 -18 111 0 M 177 300 q 55 -18 111 0" stroke="#7a8488" strokeWidth={3} fill="none" />
+        <rect x={144} y={252} width={8} height={44} rx={4} fill="#5a6165" stroke={OUT} strokeWidth={2} />
+        <rect x={158} y={252} width={8} height={44} rx={4} fill="#5a6165" stroke={OUT} strokeWidth={2} />
+        <circle cx={155} cy={320} r={7} fill="#4a4f52" stroke={OUT} strokeWidth={2} />
+        <rect x={0} y={396} width={310} height={14} fill="#7a8488" stroke={OUT} strokeWidth={3} />
+        <rect x={14} y={410} width={24} height={18} fill="#6a7478" stroke={OUT} strokeWidth={2.5} />
+        <rect x={272} y={410} width={24} height={18} fill="#6a7478" stroke={OUT} strokeWidth={2.5} />
+      </g>
       {/* pendant lamp */}
       <g transform={`rotate(${Math.sin(t * 0.9) * 0.6} 900 -100)`}>
         <line x1={900} y1={-300} x2={900} y2={150} stroke={OUT} strokeWidth={4} />
@@ -614,6 +685,18 @@ export const MahinRoom: React.FC<{ pal: Pal; t: number; sid: string }> = ({ pal,
         <path d="M 1488 572 H 1602" stroke="#000" strokeWidth={2} opacity={0.18} />
         <rect x={1640} y={604} width={52} height={36} rx={6} fill="#a8553f" stroke={OUT} strokeWidth={3} />
       </g>
+      {/* wall calendar */}
+      <g transform="translate(1430 196)">
+        <rect x={3} y={5} width={140} height={186} fill="#000" opacity={0.25} filter={`url(#soft6-${sid})`} />
+        <rect width={140} height={186} fill="#efe6d0" stroke={OUT} strokeWidth={3} />
+        <rect width={140} height={44} fill="#a64d43" stroke={OUT} strokeWidth={3} />
+        <text x={70} y={32} fontSize={24} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={800} fill="#ffe9b0" textAnchor="middle">বছর ১৪৩১</text>
+        {Array.from({ length: 4 }).map((_, r) =>
+          Array.from({ length: 5 }).map((_, c) => (
+            <rect key={`${r}${c}`} x={13 + c * 24} y={58 + r * 30} width={16} height={16} fill={(r + c) % 7 === 0 ? '#c9533c' : '#7a6a55'} opacity={0.55} />
+          )),
+        )}
+      </g>
       {/* hanging shirt (sways in the breeze) */}
       <g transform={`translate(1220 150) rotate(${shirt} 0 0)`}>
         <line x1={0} y1={-300} x2={0} y2={60} stroke={OUT} strokeWidth={3} />
@@ -704,6 +787,23 @@ export const Street: React.FC<{ pal: Pal; t: number; sid: string; garland?: bool
         const fl = Math.sin(t * 9 + k * 2) * 7;
         return <path key={k} d={`M ${bx - 14} ${by + fl} Q ${bx - 6} ${by - 4} ${bx} ${by} Q ${bx + 6} ${by - 4} ${bx + 14} ${by + fl}`} stroke="#2a2a2a" strokeWidth={2.4} fill="none" opacity={0.6} />;
       })}
+      {/* cloth banner strung across the bazaar */}
+      <g transform={`translate(0 ${Math.sin(t * 1.1) * 4})`}>
+        <path d="M 640 300 Q 1100 372 1560 306" stroke="#3a3128" strokeWidth={3} fill="none" />
+        <path d={`M 700 316 Q 1100 380 ${1500 + flutter * 3} 320 L ${1500 + flutter * 3} 384 Q 1100 444 700 380 Z`} fill="#2e5a8a" stroke={OUT} strokeWidth={3} opacity={0.95} />
+        <text x={1100} y={378} fontSize={40} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={800} fill="#ffe9b0" textAnchor="middle" transform={`rotate(1.5 1100 378)`}>সব দোকান খোলা • প্রতিদিন</text>
+      </g>
+      {/* neighbouring shop signboards */}
+      {[
+        { x: 1420, w: 240, t: 'চা হাউজ', c: '#8a3a2f' },
+        { x: 1720, w: 260, t: 'টেইলার্স', c: '#2e5a8a' },
+      ].map((sg) => (
+        <g key={sg.x}>
+          <rect x={sg.x} y={566} width={sg.w} height={54} fill={sg.c} stroke={OUT} strokeWidth={3.5} />
+          <rect x={sg.x} y={566} width={sg.w} height={8} fill="#000" opacity={0.25} />
+          <text x={sg.x + sg.w / 2} y={604} fontSize={30} fontFamily="'Noto Sans Bengali', sans-serif" fontWeight={800} fill="#f5eed6" textAnchor="middle">{sg.t}</text>
+        </g>
+      ))}
       {/* road */}
       <rect x={-200} y={790} width={2320} height={520} fill={`url(#road-${sid})`} filter={`url(#tex-floor-${sid})`} />
       <rect x={-200} y={774} width={2320} height={30} fill={mixHex(pal.floor, '#7a6a55', 0.5)} />

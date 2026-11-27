@@ -24,7 +24,7 @@ export const s21 = (c: Ctx): SceneOut => {
       { d: 99, a: [1180, 500, 1.5], b: [1200, 500, 1.65] },
     ]),
     actors: [
-      { id: 'B', x: w.x, walk: w.walk, flip: false, expr: t < tB1 ? 'worried' : 'sad', look: 0.8, hf: [w.x + 98, 520], hr: [w.x + 70, 532] },
+      { id: 'B', x: w.x, walk: w.walk, walkBlend: w.blend, flip: false, expr: t < tB1 ? 'worried' : 'sad', look: 0.8, hf: [w.x + 98, 520], hr: [w.x + 70, 532] },
       { id: 'M', x: 1620, flip: true, expr: 'sad', look: t < tSil ? 0.6 : 0.4, lookY: 0.2, hf: [1585, 500], hr: [1548, 508], z: 'front' },
     ],
     props: <Book x={w.x + 116} y={516} s={0.5} />,
@@ -62,7 +62,12 @@ export const s23 = (c: Ctx): SceneOut => {
   const { t } = c;
   const u = clamp((t - 0.8) / (c.d - 4));
   const tClose = c.E(157) - 1.5;
-  const bPen: V2 = [1432 + Math.sin(t * 1.6) * 24, COUNTER_Y - 4];
+  // pen motion synced to the ink: one line per u-step (7 lines over the scene),
+  // travelling across the page and flicking back at each line break
+  const penCyc = (t * 0.5) % 1;
+  const penAlong = penCyc < 0.85 ? penCyc / 0.85 : 1 - (penCyc - 0.85) / 0.15;
+  const penLine = Math.min(6, Math.floor(u * 7));
+  const bPen: V2 = [1284 + penAlong * 152 + Math.sin(t * 12) * 2.4, COUNTER_Y - 16 - penLine * 9.8 + Math.sin(t * 15) * 1.6];
   return {
     bg: 'shop',
     pal: PAL.neutral,
@@ -105,7 +110,7 @@ export const s24 = (c: Ctx): SceneOut => {
     actors: [
       { id: 'M', x: 900, expr: t < tM1 ? 'neutral' : 'soft', look: 0.9, tilt: nod, hf: t > tM1 && t < tB0 ? [1010, 560 + sway(t, 8, 1)] : null, z: 'front' },
       { id: 'B', x: 1400, flip: true, expr: t < tB1 - 0.5 ? 'thinking' : 'soft', look: -0.8, hf: t > tB0 && t < tB1 ? [1370, 410] : [1300, COUNTER_Y - 6], hr: [1480, COUNTER_Y - 6] },
-      ...(t > tTemp - 0.5 ? [{ id: 'O' as const, x: 1750, flip: true, expr: 'neutral' as const, look: -0.4, hf: [1650, 560 + sway(t, 20, 1.2)] as V2, z: 'back' as const }] : []),
+      ...(t > c.T(167, 2) - 0.5 ? [{ id: 'O' as const, x: 1750, flip: true, expr: 'neutral' as const, look: -0.4, hf: [1650, 560 + sway(t, 20, 1.2)] as V2, z: 'back' as const }] : []), // the food-shop owner arrives as his cancellation is narrated (line167 seg2)
     ],
     props: (
       <>
@@ -141,7 +146,7 @@ export const s25 = (c: Ctx): SceneOut => {
     ]),
     actors: [
       { id: 'B', x: 1450, flip: true, expr: t < tBack ? 'sad' : 'soft', look: -0.8, lookY: t < tBack ? 0.6 : 0, hf: [1370, COUNTER_Y - 6], hr: [1520, COUNTER_Y - 6] },
-      { id: 'M', x: w.x, walk: w.walk, flip: false, expr: 'neutral', look: 0.8, hf: arrived && t > tKey - 1.1 ? hand : null, z: 'front' },
+      { id: 'M', x: w.x, walk: w.walk, walkBlend: w.blend, flip: false, expr: 'neutral', look: 0.8, hf: arrived && t > tKey - 1.1 ? hand : null, z: 'front' },
     ],
     props: (
       <>
@@ -189,7 +194,7 @@ export const s27 = (c: Ctx): SceneOut => {
   const goC = c.E(185) - 3.8;
   const cw = walkTo(t, 1120, 300, goC + 1.8, goC + 6);
   const actors: ActorSpec[] = [
-    { id: 'C', x: cw.x, walk: cw.walk, flip: t > goC + 1.8, expr: t < goC + 1 ? 'smile' : 'surprised', look: t > goC + 1.8 ? -1 : 0.9, z: 'front', hf: null },
+    { id: 'C', x: cw.x, walk: cw.walk, walkBlend: cw.blend, flip: t > goC + 1.8, expr: t < goC + 1 ? 'smile' : 'surprised', look: t > goC + 1.8 ? -1 : 0.9, z: 'front', hf: null },
     { id: 'M', x: 1340, flip: true, expr: t < tSlide ? 'worried' : 'soft', look: t < c.T(183) ? 0.9 : -0.3, lookY: t > tSlide ? 0.7 : 0, hf: [1270, 625], hr: null },
     { id: 'B', x: 1700, flip: true, expr: t < tB ? 'soft' : 'soft', look: t > tB ? -0.9 : -0.6, hf: t < tSlide + 1.7 ? [lx + 82, 620] : [1560, 600], hr: [1770, COUNTER_Y - 6], lean: p > 0.1 && p < 1 ? 6 : 0 },
   ];

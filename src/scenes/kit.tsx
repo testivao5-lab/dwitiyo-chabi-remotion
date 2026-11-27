@@ -128,11 +128,16 @@ export function walkTo(
   x1: number,
   ts: number,
   te: number,
-): { x: number; walk: number | null; flip: boolean } {
+): { x: number; walk: number | null; blend: number; flip: boolean } {
   const p = easeInOut(clamp((t - ts) / (te - ts)));
   const x = x0 + (x1 - x0) * p;
   const moving = t > ts && t < te;
-  return { x, walk: moving ? Math.abs(x - x0) / 46 : null, flip: x1 < x0 };
+  // pose blend: ease into the walk over 0.35 s and out of it over 0.45 s so the
+  // character never snaps between the standing and striding poses
+  const blend = moving
+    ? Math.min(easeInOut(clamp((t - ts) / 0.35)), easeInOut(clamp((te - t) / 0.45)))
+    : 0;
+  return { x, walk: moving ? Math.abs(x - x0) / 46 : null, blend, flip: x1 < x0 };
 }
 
 /** the word "আমার" as a visual motif */

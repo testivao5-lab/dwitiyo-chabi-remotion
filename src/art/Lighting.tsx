@@ -69,7 +69,7 @@ export const TextureDefs: React.FC = () => (
 );
 
 export const Texture: React.FC = () => (
-  <g style={{ mixBlendMode: 'soft-light' }} opacity={0.24} pointerEvents="none">
+  <g style={{ mixBlendMode: 'soft-light' }} opacity={0.12} pointerEvents="none">
     <rect width={WIDTH} height={HEIGHT} filter="url(#paper)" />
   </g>
 );
@@ -141,7 +141,7 @@ export const LightLayer: React.FC<{ id: number; t: number; rig: LightRig; lamp?:
           <polygon key={i} points={beamPoly(b)} fill={`url(#beam${id})`} opacity={b.o * 0.6 * flick(i) * rig.strength} />
         ))}
       </g>
-      <circle cx={sx} cy={sy} r={460} fill={`url(#src${id})`} opacity={0.28 * flick(9) * rig.strength} />
+      <circle cx={sx} cy={sy} r={460} fill={`url(#src${id})`} opacity={0.22 * flick(9) * rig.strength} />
       {rig.kind === 'street' && (
         <g opacity={0.16 * flick(3)}>
           <ellipse cx={sx} cy={sy} rx={1100} ry={9} fill={key} filter={`url(#bs${id})`} />
@@ -150,8 +150,8 @@ export const LightLayer: React.FC<{ id: number; t: number; rig: LightRig; lamp?:
           <circle cx={sx + 760} cy={sy + 520} r={64} fill="#fff1c9" opacity={0.2} />
         </g>
       )}
-      <ellipse cx={rig.kind === 'night' ? 1180 : 760} cy={930} rx={620} ry={120} fill={`url(#pool${id})`} opacity={0.3 * flick(5) * rig.strength} />
-      {lamp && <circle cx={960} cy={560} r={520} fill={`url(#src${id})`} opacity={0.35 * flick(2)} />}
+      <ellipse cx={rig.kind === 'night' ? 1180 : 760} cy={930} rx={620} ry={120} fill={`url(#pool${id})`} opacity={0.24 * flick(5) * rig.strength} />
+      {lamp && <circle cx={960} cy={560} r={520} fill={`url(#src${id})`} opacity={0.27 * flick(2)} />}
       {dust.map((d, i) => (
         <circle key={i} cx={d.x} cy={d.y} r={d.r} fill="#fff4d8" opacity={clamp(d.o, 0, 0.8)} filter={d.layer === 2 ? `url(#db${id})` : undefined} />
       ))}
@@ -193,7 +193,7 @@ export const ShadeLayer: React.FC<{ id: number; rig: LightRig; t: number }> = ({
 
 /** halation: warm glow bleeding around the brightest region of the frame */
 export const Halation: React.FC<{ rig: LightRig; id: number }> = ({ rig, id }) => (
-  <g style={{ mixBlendMode: 'screen' }} pointerEvents="none" opacity={0.2}>
+  <g style={{ mixBlendMode: 'screen' }} pointerEvents="none" opacity={0.1}>
     <defs>
       <radialGradient id={`hal${id}`} cx={`${(rig.sx / WIDTH) * 100}%`} cy={`${Math.max(0, rig.sy / HEIGHT) * 100}%`} r="85%">
         <stop offset="0" stopColor={rig.key} stopOpacity={0.22} />
